@@ -107,8 +107,14 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 .hl:has(>textarea.hide){display:none}
 .hl>textarea{position:relative;background:transparent;margin:0!important}
 .hlb{position:absolute;inset:0;padding:6px 8px;border:1px solid transparent;white-space:pre-wrap;overflow-wrap:break-word;color:transparent;overflow:hidden;pointer-events:none;border-radius:4px}
+.tb{display:flex;align-items:center;gap:8px;margin-top:4px}
+.hl:has(>textarea.hide)+.tb{display:none}
+.tb i{flex:1;height:4px;background:var(--line);border-radius:2px;position:relative;overflow:hidden}
+.tb b{position:absolute;inset:0 auto 0 0;background:var(--acc);border-radius:2px}
+.tb.over b{background:var(--bad)}.tb.over span{color:var(--bad)}
+.tb span{font-size:11px;color:var(--mut);white-space:nowrap}
 .hlb span{border-radius:2px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
-.hlb .wu{background:#7a3418}.hlb .wd{background:#1c4f8f}.hlb .wc{background:#1f6e30}
+.hlb .wc{background:#1f6e30}
 #ac div.on,#ac div:hover{background:var(--acc);color:#13152c}
 #ac small{opacity:.7}
 #toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--p3);border:1px solid var(--acc);border-radius:6px;padding:8px 14px;z-index:40;display:none;max-width:90vw}
@@ -399,7 +405,7 @@ function refresh(){
  $('#bMask').classList.toggle('on',!!(base&&base.mask));
  $('#refBadge').textContent=((base?1:0)+(model().gen<5?vibes.length:0)+(model().gen===4.5?refs.length:0))||'';
  $('#sumT').textContent=BP().trim()||'프롬프트 입력';
- $('#cost').textContent=costText();v5Quota();
+ $('#cost').textContent=costText();v5Quota();tbAll();
  $('#gen').classList.toggle('busy',busy);
  $('#genT').textContent=busy?(stopReq?'중지 중… (다시 누르면 취소)':(S.loop?'중지':'취소')):`${S.n}장 생성`;
  $$('#bar button').forEach(b=>b.disabled=!cur);$('#bSeedLast').disabled=!cur;
@@ -711,14 +717,15 @@ $('#preList').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;cons
 
 /* ---------- tag autocomplete ---------- */
 /* ---------- weight highlight ---------- */
-function hlPlain(s){let out='',run='',cls='',cu=0,sq=0;
- const flush=()=>{if(run)out+=cls?`<span class="${cls}">${esc(run)}</span>`:esc(run);run=''};
- for(const ch of s){if(ch==='{')cu++;else if(ch==='[')sq++;const n=cu-sq,c=n>0?'wu':n<0?'wd':'';if(c!==cls){flush();cls=c}run+=ch;if(ch==='}'&&cu)cu--;else if(ch===']'&&sq)sq--}
+function wSt(w){if(!(w!==1))return '';const a=(0.25+0.75*Math.min(1,w>1?w-1:1-w)).toFixed(2);return ` style="background:rgba(${w>1?'176,70,26':'36,104,196'},${a})"`}
+function hlPlain(s){let out='',run='',key=0,cu=0,sq=0;
+ const flush=()=>{if(run)out+=key?`<span${wSt(Math.pow(1.05,key))}>${esc(run)}</span>`:esc(run);run=''};
+ for(const ch of s){if(ch==='{')cu++;else if(ch==='[')sq++;const n=cu-sq;if(n!==key){flush();key=n}run+=ch;if(ch==='}'&&cu)cu--;else if(ch===']'&&sq)sq--}
  flush();return out}
 function hlHtml(s){let out='',i=0;const re=/(-?\d+(?:\.\d+)?|-?\.\d+)::/g;let m;
  while((m=re.exec(s))){const w=parseFloat(m[1]),st=m.index,cs=re.lastIndex,end=s.indexOf('::',cs);
-  out+=hlPlain(s.slice(i,st));const c=w>1?'wu':w<1?'wd':'';const body=s.slice(st,end<0?s.length:end);
-  out+=c?`<span class="${c}">${esc(body)}</span>`:esc(body);
+  out+=hlPlain(s.slice(i,st));const st2=wSt(w),body=s.slice(st,end<0?s.length:end);
+  out+=st2?`<span${st2}>${esc(body)}</span>`:esc(body);
   if(end<0){i=s.length;break}out+='<span class="wc">::</span>';i=end+2;re.lastIndex=i}
  return out+hlPlain(s.slice(i))+'​'}
 function hlUp(t){const w=t.parentNode;if(!w||!w.classList.contains('hl'))return;const b=w.firstChild;
@@ -726,8 +733,18 @@ function hlUp(t){const w=t.parentNode;if(!w||!w.classList.contains('hl'))return;
 const hlRO=new ResizeObserver(es=>es.forEach(e=>hlUp(e.target)));
 function hlInit(root=document){$$('textarea.pr',root).forEach(t=>{if(t.parentNode.classList.contains('hl'))return hlUp(t);
  const cs=getComputedStyle(t),w=document.createElement('div');w.className='hl';w.style.margin=cs.margin;
- const b=document.createElement('div');b.className='hlb';t.before(w);w.append(b,t);t.addEventListener('scroll',()=>b.scrollTop=t.scrollTop);hlRO.observe(t);hlUp(t)})}
-document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('textarea.pr'))hlUp(e.target)});
+ const b=document.createElement('div');b.className='hlb';t.before(w);w.append(b,t);
+ const tb=document.createElement('div');tb.className='tb';tb.innerHTML='<i><b></b></i><span></span>';w.after(tb);t.addEventListener('scroll',()=>b.scrollTop=t.scrollTop);hlRO.observe(t);hlUp(t)})}
+document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('textarea.pr')){hlUp(e.target);tbAll()}});
+/* token bars (estimate; NAI uses T5 for V4+, CLIP for V3) */
+function tokEst(s){s=String(s||'').replace(/-?\d*\.?\d+::|::|[{}\[\]]/g,' ');let n=0;
+ for(const m of s.matchAll(/[A-Za-z]+|\d+|[^\sA-Za-z\d]/g)){const w=m[0];n+=/[A-Za-z]/.test(w)?Math.max(1,Math.round(w.length/4.5)):/\d/.test(w)?w.length:1}return n}
+const tokLim=()=>{const m=model();return m.gen>=5?(S.model.includes('curated')?703:1471):m.gen>=4?512:225};
+function tbAll(){const m=model(),lim=tokLim(),ch=m.gen>=4?CH().filter(c=>c.on!==false):[];
+ let p=tokEst(BP())+(m.gen>=5&&S.transp?3:0)+(S.q?tokEst(m.q[S.q-1][1]):0)+ch.reduce((a,c)=>a+tokEst(c.p),0);
+ const u=tokEst(S.uc)+(S.ucp<m.u.length?tokEst(m.u[S.ucp][1]):0)+ch.reduce((a,c)=>a+tokEst(c.uc),0);
+ $$('.tb').forEach(tb=>{const t=tb.previousElementSibling&&tb.previousElementSibling.querySelector('textarea');if(!t)return;
+  const v=(t.dataset.k==='uc'||t.dataset.f==='uc')?u:p;tb.classList.toggle('over',v>lim);tb.querySelector('b').style.width=Math.min(100,v/lim*100)+'%';tb.querySelector('span').textContent=v+' / '+lim})}
 
 const ac=$('#ac');let acT,acTa=null,acList=[],acI=0,acOff=false,acModel=null,acSeq=0;
 function acTok(t){const v=t.value,c=t.selectionStart;let a=Math.max(v.lastIndexOf(',',c-1),v.lastIndexOf('\n',c-1),v.lastIndexOf('|',c-1),v.lastIndexOf(':',c-1))+1;while(a<c&&/[\s{\[]/.test(v[a]))a++;return {a,b:c,s:v.slice(a,c)}}
@@ -739,7 +756,7 @@ async function acRun(t){
   if(!r.ok){if(!acModel&&r.status===400)acModel='nai-diffusion-4-5-full';return acHide()}
   const j=await r.json();if(seq!==acSeq||document.activeElement!==t)return;
   acList=(j.tags||[]).slice(0,10);if(!acList.length)return acHide();acTa=t;acI=0;acDraw();
-  (t.closest('.hl')||t).after(ac);ac.style.display='block';ac.scrollTop=0;
+  const an=t.closest('.hl')||t,nx=an.nextElementSibling;(nx&&nx.classList.contains('tb')?nx:an).after(ac);ac.style.display='block';ac.scrollTop=0;
   const rb=ac.getBoundingClientRect(),fb=$('#foot').getBoundingClientRect().top;if(rb.bottom>fb)ac.scrollIntoView({block:'nearest'});
  }catch{acHide()}
 }
