@@ -206,15 +206,15 @@ body.med .adv{display:none!important}
   <div id="pBody">
    <div class="tabs" id="ptabs"><button class="on" data-tab="P">프롬프트<em id="chBadge"></em></button><button data-tab="R">레퍼런스 이미지<em id="refBadge"></em></button><button data-tab="C">청크</button></div>
    <div id="tabP">
-    <div class="sec pbox">
-     <div class="row"><b class="ph">프롬프트</b><span class="sp"></span>
-      <button class="ic" id="bDice" title="랜덤 프롬프트"></button><button class="ic" id="bBig" title="입력창 크게"></button></div>
+    <div class="sec pbox" id="pBox">
+     <div class="row"><b class="ph" id="phP">프롬프트</b><span id="phTabs" class="row hide"><button class="chip on" data-pt="p">프롬프트</button><button class="chip" data-pt="u">제외 (UC)</button></span><span class="sp"></span>
+      <button class="ic" id="bDice" title="랜덤 프롬프트"></button><button class="ic" id="bBig" title="입력창 크게"></button><button class="ic hide" id="bDetach" title="UC 분리해서 따로 보기"></button></div>
      <div class="row hide" id="rndBar" style="margin-top:8px"><b style="color:var(--acc)">랜덤 프롬프트</b><span class="sp"></span><button class="ic" id="bRndX" title="원래 프롬프트로"></button><button class="ic" id="bRndRe" title="다시 굴리기"></button></div>
      <textarea class="pr" data-k="prompt" id="tPrompt" rows="6" placeholder="프롬프트 · ||a|b|| 랜덤"></textarea>
      <div class="row" id="rowP"><button class="chip o5" id="bTransp">투명 배경</button><span class="sp"></span><select class="mini" data-k="q" data-num id="q"></select></div>
     </div>
-    <div class="sec pbox">
-     <div class="row"><b class="ph">제외 (UC)</b><span class="sp"></span><span class="mut" id="ucNote"></span></div>
+    <div class="sec pbox" id="ucBox">
+     <div class="row"><b class="ph">제외 (UC)</b><span class="sp"></span><span class="mut" id="ucNote"></span><button class="ic" id="bReatt" title="UC를 프롬프트 칸에 다시 붙이기"></button></div>
      <textarea class="pr" data-k="uc" id="tUc" rows="4" placeholder="제외할 내용"></textarea>
      <div class="row" id="rowU"><span class="sp"></span><select class="mini" data-k="ucp" data-num id="ucp"></select></div>
     </div>
@@ -449,7 +449,7 @@ const r64=v=>Math.max(64,Math.round(v/64)*64);
 /* ---------- static UI ---------- */
 const setIc=(sel,n)=>$$(sel).forEach(e=>e.innerHTML=ic(n));
 setIc('#bSet','menu');setIc('#bGear','sliders');setIc('#bHist','clock');setIc('#bPreset','book');setIc('#bAddBase,#bAddVibe,#bAddRef','upl');$$('.ri[data-ic]').forEach(e=>e.innerHTML=ic(e.dataset.ic));setIc('#bAddCh','plus');
-setIc('[data-close],[data-pclose],#bDelBase,#bSeedX','x');setIc('#bSwap','swap');setIc('#bMask,#mkDraw','brush');setIc('#mkErase','erase');setIc('#mkClear','trash');setIc('#mkX','x');setIc('#bChAdd','plus');setIc('#hZip','save');setIc('#hClr','trash');setIc('#bAiReset','load');setIc('#bDelBase','trash');setIc('#bPaint,#bPaintNew','brush');setIc('#bRepl','upl');setIc('#mkDl','save');setIc('#mkMoreB','more');setIc('#mkPalB','pal');setIc('#mkUndo','undo');setIc('#mkRedo','redo');
+setIc('[data-close],[data-pclose],#bDelBase,#bSeedX','x');setIc('#bSwap','swap');setIc('#bMask,#mkDraw','brush');setIc('#mkErase','erase');setIc('#mkClear','trash');setIc('#mkX','x');I.det='<rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 15v4a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-4"/>';I.att='<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h18"/>';setIc('#bDetach','det');setIc('#bReatt','att');setIc('#bChAdd','plus');setIc('#hZip','save');setIc('#hClr','trash');setIc('#bAiReset','load');setIc('#bDelBase','trash');setIc('#bPaint,#bPaintNew','brush');setIc('#bRepl','upl');setIc('#mkDl','save');setIc('#mkMoreB','more');setIc('#mkPalB','pal');setIc('#mkUndo','undo');setIc('#mkRedo','redo');
 setIc('#bLoop','loop');setIc('#bRndX','x');setIc('#bRndRe','load');setIc('#bDice','dice');setIc('#bBig','big');setIc('#bPos','grid');setIc('#bSeedLast','seed');$('#sumA').innerHTML=ic('au');
 $$('#bar > [data-a]').forEach(b=>b.innerHTML=ic({save:'save',copy:'copy',i2i:'wand',paint:'brush',up:'up',enh:'spark',more:'more'}[b.dataset.a]));
 opts($('#model'),MODELS.map(m=>[m.id,m.name]));
@@ -465,9 +465,20 @@ function modelUI(){
  opts($('#sched'),SCHEDS.filter(s=>m.gen===3||s!=='native').map(s=>[s,s]));
  if(m.gen!==3){if(S.sampler==='ddim_v3')S.sampler='k_euler_ancestral';if(S.sched==='native')S.sched='karras'}
 }
+let ucTab=false;
+function ucLayout(){const att=!!S.ucAttach,b1=$('#pBox'),b2=$('#ucBox'),uh=$('#tUc').closest('.hl')||$('#tUc'),ut=uh.nextElementSibling&&uh.nextElementSibling.classList.contains('tb')?uh.nextElementSibling:null,
+ ph=$('#tPrompt').closest('.hl')||$('#tPrompt'),pt=ph.nextElementSibling&&ph.nextElementSibling.classList.contains('tb')?ph.nextElementSibling:null;
+ const parts=[uh,ut,$('#rowU')].filter(Boolean),dest=att?b1:b2;if(uh.parentNode!==dest)parts.forEach(p=>dest.append(p));
+ b2.classList.toggle('hide',att);$('#phTabs').classList.toggle('hide',!att);$('#phP').classList.toggle('hide',att);$('#bDetach').classList.toggle('hide',!att);
+ const u=att&&ucTab;[ph,pt,$('#rowP')].filter(Boolean).forEach(e=>e.classList.toggle('hide',u));parts.forEach(e=>e.classList.toggle('hide',att&&!u));
+ if(u)$('#rndBar').classList.add('hide');$$('#phTabs [data-pt]').forEach(b=>b.classList.toggle('on',(b.dataset.pt==='u')===u));
+ const t=u?$('#tUc'):$('#tPrompt');if(t.offsetParent)hlUp(t)}
+$('#phTabs').onclick=e=>{const b=e.target.closest('[data-pt]');if(b){ucTab=b.dataset.pt==='u';ucLayout();refresh()}};
+$('#bDetach').onclick=()=>{S.ucAttach=false;ucTab=false;save();ucLayout();refresh()};
+$('#bReatt').onclick=()=>{S.ucAttach=true;ucTab=false;save();ucLayout();refresh()};
 function bindAll(){
  $$('[data-k]').forEach(el=>{const k=el.dataset.k;if(el.type==='checkbox')el.checked=!!S[k];else el.value=S[k]});
- $('#tPrompt').value=BP();hlInit();
+ $('#tPrompt').value=BP();hlInit();ucLayout();
  $$('[data-imp]').forEach(el=>el.checked=!!S.imp[el.dataset.imp]);
 }
 function refresh(){
@@ -477,7 +488,7 @@ function refresh(){
  $('#bFur').textContent=S.furry?'퍼리':'애니';$('#bFur').classList.toggle('on',!!S.furry);
  $('#bTransp').classList.toggle('on',S.transp);$('#bLoop').classList.toggle('on',S.loop);
  $('#bVar').classList.toggle('on',!!S.variety);$('#bVar').textContent=(S.variety?'✓ ':'')+'Variety+';
- $('#rndBar').classList.toggle('hide',!rBase());
+ $('#rndBar').classList.toggle('hide',!rBase()||(S.ucAttach&&ucTab));
  const md=medium();document.body.classList.toggle('med',md);$('#effRow').classList.toggle('hide',S.model!=='nai-diffusion-5-full');
  $$('[data-k=steps],[data-k=sampler],[data-k=rescale]').forEach(e=>e.disabled=md);
  $('#ucNote').textContent=md?'Medium은 UC 고정':'';
