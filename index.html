@@ -235,7 +235,7 @@ body.med .adv{display:none!important}
     <div id="baseBox" class="hide rc" style="flex-direction:column;align-items:stretch">
      <div class="row" style="align-items:flex-start"><img class="thumb" id="baseTh" style="width:64px;height:84px"><div class="grow"><b>이미지→이미지</b><div class="mut" id="baseInfo"></div>
       <div class="row" style="margin-top:6px"><button class="chip" id="bMask"></button><button class="ic" id="bPaint" title="이미지 위에 그리기"></button><button class="ic" id="bRepl" title="이미지 교체"></button><span class="sp"></span><button class="ic" id="bDelBase" title="제거"></button></div></div></div>
-     <div class="lbl">강도</div><div class="ns"><input type="number" data-k="strength" min="0.01" max="0.99" step="0.01"><input type="range" data-k="strength" min="0.01" max="0.99" step="0.01"></div>
+     <div class="lbl">강도</div><div class="ns"><input type="number" data-k="strength" min="0.01" max="1" step="0.01"><input type="range" data-k="strength" min="0.01" max="1" step="0.01"></div>
      <div class="lbl">노이즈</div><div class="ns"><input type="number" data-k="noise" min="0" max="0.99" step="0.01"><input type="range" data-k="noise" min="0" max="0.99" step="0.01"></div>
     </div>
     <div class="n5 rgrp"><div class="rc"><span class="ri" data-ic="vibe"></span><div class="grow"><b>바이브 트랜스퍼</b><div class="mut">그림은 바꾸고 분위기는 유지</div></div><button class="rb" id="bAddVibe" title="바이브 추가"></button></div><div id="vibes"></div></div>
@@ -825,7 +825,7 @@ async function genStream(body){
    else if(msg.event_type==='error'){const er=new Error(msg.message||'생성 오류');er.status=msg.status;throw er}}
   if(done)break}
  const out=fin.filter(Boolean);if(!out.length){const er=new Error('stream');er.streamFail=1;throw er}return out}
-let noStream=false;
+let noStream=true;
 async function runGen(body){
  if(!noStream){try{return await genStream(body)}catch(e){if(e.name==='AbortError'||[401,402,429].includes(e.status))throw e;if(!(e.streamFail||e.status))throw e;noStream=true}}
  const r=await api('/ai/generate-image',body);return await unzip(new Uint8Array(await r.arrayBuffer()))}
