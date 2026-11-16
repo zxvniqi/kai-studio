@@ -184,7 +184,7 @@ body.med .adv{display:none!important}
  #sumT{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  #pPanel.col #sum{display:flex}
  #pPanel.col #pBody{display:none}
- #pBody{overflow-y:auto;flex:1;padding:0 10px 12px}
+ #pBody{touch-action:pan-y;overflow-x:hidden;overflow-y:auto;flex:1;padding:0 10px 12px}
  #foot{order:3;border-right:none;padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
  #bGear,#bHist{display:inline-grid;width:44px;height:44px}
  #sPanel,#hist{position:fixed;inset:0 0 calc(61px + env(safe-area-inset-bottom)) 0;z-index:15;background:var(--p1);padding:12px;overflow-y:auto;display:none;border:none}
@@ -546,10 +546,23 @@ $('#bLoop').onclick=()=>{S.loop=!S.loop;save();refresh()};
 $('#bBig').onclick=()=>{$$('#tPrompt,#tUc').forEach(t=>t.classList.toggle('big'));$('#bBig').classList.toggle('on')};
 function pTab(t){$$('#ptabs button').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));$('#tabP').classList.toggle('hide',t!=='P');$('#tabR').classList.toggle('hide',t!=='R');$('#tabC').classList.toggle('hide',t!=='C');if(t==='C')renderChunks()}
 $$('#ptabs button').forEach(b=>b.onclick=()=>pTab(b.dataset.tab));
-const TABS=['P','R','C'];let sw=null;
-$('#pBody').addEventListener('touchstart',e=>{const t=e.target;if(e.touches.length!==1||t.closest('input[type=range],#ac,select,.ns,#chars .seg,.seg'))return sw=null;sw={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()}},{passive:true});
-$('#pBody').addEventListener('touchend',e=>{if(!sw)return;const c=e.changedTouches[0],dx=c.clientX-sw.x,dy=c.clientY-sw.y;const ok=Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.8&&Date.now()-sw.t<700;sw=null;if(!ok)return;
- const cur=$('#ptabs button.on').dataset.tab,i=TABS.indexOf(cur),n=i+(dx<0?1:-1);if(n>=0&&n<TABS.length)pTab(TABS[n])},{passive:true});
+const TABS=['P','R','C'],TEL={P:'#tabP',R:'#tabR',C:'#tabC'};let sw=null;
+const tabNow=()=>$('#ptabs button.on').dataset.tab;
+const slideTo=(el,x,ms,done)=>{el.style.transition=ms?`transform ${ms}ms cubic-bezier(.2,.7,.3,1)`:'none';el.style.transform=x?`translateX(${x}px)`:'translateX(0)';
+ if(done)setTimeout(done,ms)};
+const clearSlide=el=>{el.style.transition='';el.style.transform=''};
+$('#pBody').addEventListener('touchstart',e=>{const t=e.target;if(e.touches.length!==1||t.closest('input[type=range],#ac,select,.ns,.seg,#ptabs'))return sw=null;
+ const c=e.touches[0];sw={x:c.clientX,y:c.clientY,t:Date.now(),lock:null,dx:0,el:$(TEL[tabNow()])}},{passive:true});
+$('#pBody').addEventListener('touchmove',e=>{if(!sw)return;const c=e.touches[0],dx=c.clientX-sw.x,dy=c.clientY-sw.y;
+ if(!sw.lock){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;sw.lock=Math.abs(dx)>Math.abs(dy)*1.2?'h':'v'}
+ if(sw.lock!=='h')return;const i=TABS.indexOf(tabNow()),edge=(dx>0&&i===0)||(dx<0&&i===TABS.length-1);
+ sw.dx=dx;slideTo(sw.el,edge?dx/4:dx,0)},{passive:true});
+$('#pBody').addEventListener('touchend',()=>{if(!sw||sw.lock!=='h'){sw=null;return}const s=sw;sw=null;const W=$('#pBody').clientWidth,dx=s.dx,dt=Date.now()-s.t;
+ const i=TABS.indexOf(tabNow()),n=i+(dx<0?1:-1),go=n>=0&&n<TABS.length&&(Math.abs(dx)>W*.22||(Math.abs(dx)>40&&dt<260));
+ if(!go){slideTo(s.el,0,200,()=>clearSlide(s.el));return}
+ slideTo(s.el,dx<0?-W:W,160,()=>{clearSlide(s.el);pTab(TABS[n]);const ne=$(TEL[TABS[n]]);slideTo(ne,dx<0?W*.6:-W*.6,0);
+  void ne.offsetWidth;setTimeout(()=>slideTo(ne,0,220,()=>clearSlide(ne)),16)})},{passive:true});
+$('#pBody').addEventListener('touchcancel',()=>{const el=sw&&sw.el;sw=null;if(el)slideTo(el,0,200,()=>clearSlide(el))},{passive:true});
 $$('.modal').forEach(m=>m.addEventListener('pointerdown',e=>{if(e.target===m||e.target.closest('[data-close]'))m.classList.remove('on')}));
 const open=id=>$(id).classList.add('on'), close=id=>$(id).classList.remove('on');
 /* mobile: overlays + bottom sheet */
