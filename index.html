@@ -8,6 +8,7 @@
 :root{--bg:#0e0f21;--p1:#13152c;--p2:#191b31;--p3:#22253f;--line:#2b2d4a;--tx:#fff;--mut:#9a9cb8;--acc:#f5f3c2;--bad:#ff7878}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{background:var(--bg);color:var(--tx);font:14px/1.45 "Source Sans 3","Pretendard","Malgun Gothic",system-ui,sans-serif;overflow:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;background:var(--p3);border:1px solid transparent;border-radius:4px;padding:6px 10px}
@@ -20,7 +21,7 @@ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-l
 input[type=text],input[type=number],input[type=password],select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px 8px;width:100%;outline:none}
 input:focus,select:focus,textarea:focus{border-color:var(--acc)}
 textarea{resize:vertical;min-height:70px;display:block}
-textarea.big{height:55vh}
+textarea.big{min-height:55vh!important}
 input[type=range]{width:100%;accent-color:var(--acc);margin:2px 0 0}
 input[type=checkbox]{accent-color:var(--acc);width:16px;height:16px}
 #app{display:grid;grid-template-columns:400px 1fr 150px;grid-template-rows:auto minmax(0,1fr) auto;height:100%}
@@ -105,7 +106,8 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 #ac div+div{border-top:1px solid var(--line)}
 .hl{position:relative;background:var(--bg);border-radius:4px}
 .hl:has(>textarea.hide){display:none}
-.hl>textarea{position:relative;background:transparent;margin:0!important}
+.hl>textarea{position:relative;background:transparent;margin:0!important;overflow:hidden;resize:none}
+.hl>textarea,.hlb{font:inherit;letter-spacing:normal;word-spacing:normal;tab-size:4;line-height:1.45}
 .hlb{position:absolute;inset:0;padding:6px 8px;border:1px solid transparent;white-space:pre-wrap;overflow-wrap:break-word;color:transparent;overflow:hidden;pointer-events:none;border-radius:4px}
 #tabR{gap:10px}
 .rc{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:8px;padding:14px 12px;background:var(--p2)}
@@ -739,12 +741,12 @@ function hlHtml(s){let out='',i=0;const re=/(-?\d+(?:\.\d+)?|-?\.\d+)::/g;let m;
   if(end<0){i=s.length;break}out+='<span class="wc">::</span>';i=end+2;re.lastIndex=i}
  return out+hlPlain(s.slice(i))+'​'}
 function hlUp(t){const w=t.parentNode;if(!w||!w.classList.contains('hl'))return;const b=w.firstChild;
- b.innerHTML=hlHtml(t.value);b.style.paddingRight=(8+Math.max(0,t.offsetWidth-t.clientWidth-2))+'px';b.scrollTop=t.scrollTop}
+ b.innerHTML=hlHtml(t.value);if(t.offsetParent){const sc=t.closest('#pBody,#left'),st=sc&&sc.scrollTop;t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px';if(sc)sc.scrollTop=st}}
 const hlRO=new ResizeObserver(es=>es.forEach(e=>hlUp(e.target)));
 function hlInit(root=document){$$('textarea.pr',root).forEach(t=>{if(t.parentNode.classList.contains('hl'))return hlUp(t);
  const cs=getComputedStyle(t),w=document.createElement('div');w.className='hl';w.style.margin=cs.margin;
  const b=document.createElement('div');b.className='hlb';t.before(w);w.append(b,t);
- const tb=document.createElement('div');tb.className='tb';tb.innerHTML='<i><b></b></i><span></span>';w.after(tb);t.addEventListener('scroll',()=>b.scrollTop=t.scrollTop);hlRO.observe(t);hlUp(t)})}
+ const tb=document.createElement('div');tb.className='tb';tb.innerHTML='<i><b></b></i><span></span>';w.after(tb);hlRO.observe(t);hlUp(t)})}
 document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('textarea.pr')){hlUp(e.target);tbAll()}});
 /* token bars (estimate; NAI uses T5 for V4+, CLIP for V3) */
 function tokEst(s){s=String(s||'').replace(/-?\d*\.?\d+::|::|[{}\[\]]/g,' ');let n=0;
