@@ -185,7 +185,6 @@ body:not([data-gen="3"]) .o3,body:not([data-gen="5"]) .o5,body:not([data-gen="4.
     <div class="sec n3">
      <h4>캐릭터 프롬프트 <span class="mut" id="chCnt"></span><span class="sp"></span><button class="ic" id="bAddCh" title="캐릭터 추가"></button></h4>
      <div class="row"><span class="mut">위치</span><div class="seg" data-seg="coords"><button data-v="false">AI 선택</button><button data-v="true">직접 지정</button></div><button class="ic" id="bPos" title="위치 지정"></button></div>
-     <button id="bRndChX" class="hide" style="margin-top:8px">랜덤 캐릭터 지우기</button>
      <div id="chars"></div>
     </div>
    </div>
@@ -403,7 +402,7 @@ function refresh(){
  const rv=S.w+'x'+S.h;$('#res').value=RES.some(r=>r[1]+'x'+r[2]===rv)?rv:'c';
  $('#bTransp').classList.toggle('on',S.transp);$('#bLoop').classList.toggle('on',S.loop);
  $('#bVar').classList.toggle('on',!!S.variety);$('#bVar').textContent=(S.variety?'✓ ':'')+'Variety+';
- $('#rndBar').classList.toggle('hide',!rBase());$('#bRndChX').classList.toggle('hide',!rChars());
+ $('#rndBar').classList.toggle('hide',!rBase());
  const md=medium();$('#effRow').classList.toggle('hide',S.model!=='nai-diffusion-5-full');
  $$('[data-k=steps],[data-k=sampler],[data-k=rescale]').forEach(e=>e.disabled=md);
  $('#ucNote').textContent=md?'Medium은 UC 고정':'';
@@ -500,7 +499,6 @@ function rollRandom(){
 const rndApply=()=>{save();bindAll();renderChars();refresh()};
 $('#bDice').onclick=$('#bRndRe').onclick=()=>{S.rnd=rollRandom();rndApply()};
 $('#bRndX').onclick=()=>{S.rnd.base=null;if(!S.rnd.chars)S.rnd=null;rndApply()};
-$('#bRndChX').onclick=()=>{S.rnd.chars=null;if(S.rnd.base==null)S.rnd=null;rndApply()};
 
 /* ---------- characters ---------- */
 function renderChars(){
@@ -516,7 +514,7 @@ function renderChars(){
 $('#bAddCh').onclick=()=>{CH().push({p:'',uc:'',x:.5,y:.5,on:true,open:true});save();renderChars();$$('#chars textarea[data-f=p]').pop().focus()};
 $('#chars').addEventListener('input',e=>{const c=e.target.closest('.card');if(c&&e.target.dataset.f){CH()[+c.dataset.i][e.target.dataset.f]=e.target.value;save()}});
 $('#chars').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;const i=+b.closest('.card').dataset.i,a=b.dataset.c,C=CH();
- if(a==='del')C.splice(i,1);else if(a==='up'&&i>0)[C[i-1],C[i]]=[C[i],C[i-1]];else if(a==='dn'&&i<C.length-1)[C[i+1],C[i]]=[C[i],C[i+1]];
+ if(a==='del'){C.splice(i,1);if(rChars()&&!C.length){S.rnd.chars=null;if(S.rnd.base==null)S.rnd=null;save();bindAll();renderChars();return}}else if(a==='up'&&i>0)[C[i-1],C[i]]=[C[i],C[i-1]];else if(a==='dn'&&i<C.length-1)[C[i+1],C[i]]=[C[i],C[i+1]];
  else if(a==='on')C[i].on=C[i].on===false;else if(a==='fold')C[i].open=C[i].open===false;
  else if(a==='tp'||a==='tu'){C[i].tab=a==='tu'?'uc':'p';save();renderChars();const t=$(`#chars .card[data-i="${i}"] textarea`);if(t)t.focus();return}
  save();renderChars()});
