@@ -100,8 +100,15 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 #maskWrap{position:relative;line-height:0;margin:0 auto;touch-action:none}
 #maskWrap img{width:100%;display:block}
 #maskWrap canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.55;cursor:crosshair}
-#ac{position:fixed;z-index:30;background:var(--p3);border:1px solid var(--line);border-radius:4px;display:none;max-height:240px;overflow:auto;min-width:200px}
-#ac div{padding:7px 10px;cursor:pointer;display:flex;gap:12px;justify-content:space-between}
+#ac{background:var(--p3);border:1px solid var(--line);border-radius:4px;display:none;max-height:160px;overflow:auto;margin-top:4px}
+#ac div{padding:8px 10px;cursor:pointer;display:flex;gap:12px;justify-content:space-between}
+#ac div+div{border-top:1px solid var(--line)}
+.hl{position:relative;background:var(--bg);border-radius:4px}
+.hl:has(>textarea.hide){display:none}
+.hl>textarea{position:relative;background:transparent;margin:0!important}
+.hlb{position:absolute;inset:0;padding:6px 8px;border:1px solid transparent;white-space:pre-wrap;overflow-wrap:break-word;color:transparent;overflow:hidden;pointer-events:none;border-radius:4px}
+.hlb span{border-radius:2px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.hlb .wu{background:#7a3418}.hlb .wd{background:#1c4f8f}.hlb .wc{background:#1f6e30}
 #ac div.on,#ac div:hover{background:var(--acc);color:#13152c}
 #ac small{opacity:.7}
 #toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--p3);border:1px solid var(--acc);border-radius:6px;padding:8px 14px;z-index:40;display:none;max-width:90vw}
@@ -372,7 +379,7 @@ function modelUI(){
 }
 function bindAll(){
  $$('[data-k]').forEach(el=>{const k=el.dataset.k;if(el.type==='checkbox')el.checked=!!S[k];else el.value=S[k]});
- $('#tPrompt').value=BP();
+ $('#tPrompt').value=BP();hlInit();
  $$('[data-imp]').forEach(el=>el.checked=!!S.imp[el.dataset.imp]);
 }
 function refresh(){
@@ -486,7 +493,7 @@ function renderChars(){
   ${op?`<div class="row" style="margin-top:6px"><button class="chip ${c.tab!=='uc'?'on':''}" data-c="tp">프롬프트</button><button class="chip ${c.tab==='uc'?'on':''}" data-c="tu">UC${c.uc.trim()?' ●':''}</button></div>
    ${c.tab==='uc'?`<textarea class="pr ch" data-f="uc" placeholder="캐릭터 UC">${esc(c.uc)}</textarea>`:`<textarea class="pr ch" data-f="p" placeholder="girl, ...">${esc(c.p)}</textarea>`}`
      :`<div class="prev" data-c="fold">${esc(c.p)||'(비어 있음)'}</div>`}</div>`}).join('');
- refresh();
+ hlInit($("#chars"));refresh();
 }
 $('#bAddCh').onclick=()=>{CH().push({p:'',uc:'',x:.5,y:.5,on:true,open:true});save();renderChars();$$('#chars textarea[data-f=p]').pop().focus()};
 $('#chars').addEventListener('input',e=>{const c=e.target.closest('.card');if(c&&e.target.dataset.f){CH()[+c.dataset.i][e.target.dataset.f]=e.target.value;save()}});
@@ -703,18 +710,37 @@ $('#preList').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;cons
  if(b.dataset.c==='load'){applySnap(p[n]);close('#mPre');toast('불러옴: '+n)}else{delete p[n];LS.nai_presets=JSON.stringify(p);renderPre()}};
 
 /* ---------- tag autocomplete ---------- */
+/* ---------- weight highlight ---------- */
+function hlPlain(s){let out='',run='',cls='',cu=0,sq=0;
+ const flush=()=>{if(run)out+=cls?`<span class="${cls}">${esc(run)}</span>`:esc(run);run=''};
+ for(const ch of s){if(ch==='{')cu++;else if(ch==='[')sq++;const n=cu-sq,c=n>0?'wu':n<0?'wd':'';if(c!==cls){flush();cls=c}run+=ch;if(ch==='}'&&cu)cu--;else if(ch===']'&&sq)sq--}
+ flush();return out}
+function hlHtml(s){let out='',i=0;const re=/(-?\d+(?:\.\d+)?|-?\.\d+)::/g;let m;
+ while((m=re.exec(s))){const w=parseFloat(m[1]),st=m.index,cs=re.lastIndex,end=s.indexOf('::',cs);
+  out+=hlPlain(s.slice(i,st));const c=w>1?'wu':w<1?'wd':'';const body=s.slice(st,end<0?s.length:end);
+  out+=c?`<span class="${c}">${esc(body)}</span>`:esc(body);
+  if(end<0){i=s.length;break}out+='<span class="wc">::</span>';i=end+2;re.lastIndex=i}
+ return out+hlPlain(s.slice(i))+'​'}
+function hlUp(t){const w=t.parentNode;if(!w||!w.classList.contains('hl'))return;const b=w.firstChild;
+ b.innerHTML=hlHtml(t.value);b.style.paddingRight=(8+Math.max(0,t.offsetWidth-t.clientWidth-2))+'px';b.scrollTop=t.scrollTop}
+const hlRO=new ResizeObserver(es=>es.forEach(e=>hlUp(e.target)));
+function hlInit(root=document){$$('textarea.pr',root).forEach(t=>{if(t.parentNode.classList.contains('hl'))return hlUp(t);
+ const cs=getComputedStyle(t),w=document.createElement('div');w.className='hl';w.style.margin=cs.margin;
+ const b=document.createElement('div');b.className='hlb';t.before(w);w.append(b,t);t.addEventListener('scroll',()=>b.scrollTop=t.scrollTop);hlRO.observe(t);hlUp(t)})}
+document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('textarea.pr'))hlUp(e.target)});
+
 const ac=$('#ac');let acT,acTa=null,acList=[],acI=0,acOff=false,acModel=null,acSeq=0;
 function acTok(t){const v=t.value,c=t.selectionStart;let a=Math.max(v.lastIndexOf(',',c-1),v.lastIndexOf('\n',c-1),v.lastIndexOf('|',c-1),v.lastIndexOf(':',c-1))+1;while(a<c&&/[\s{\[]/.test(v[a]))a++;return {a,b:c,s:v.slice(a,c)}}
 const acHide=()=>{ac.style.display='none';acList=[]};
 async function acRun(t){
- const k=acTok(t);if(!tok||acOff||!S.ac||k.s.trim().length<2)return acHide();const seq=++acSeq;
- try{const md=acModel||(model().gen>=5?S.model:model().gen>=4?'nai-diffusion-4-5-full':'nai-diffusion-3');
-  const r=await fetch(`${HOST}/ai/generate-image/suggest-tags?model=${md}&prompt=${encodeURIComponent(k.s.trim())}`,{headers:{Authorization:'Bearer '+tok}});
-  if(!r.ok){if(!acModel&&r.status===400){acModel='nai-diffusion-4-5-full'}else if(r.status!==429)acOff=true;return acHide()}
+ const k=acTok(t),q=k.s.trim().replace(/^-?\d*\.?\d+$/,'');if(!S.ac||q.length<2)return acHide();const seq=++acSeq;
+ try{const md=acModel||(model().gen>=4?(S.model.includes('furry')?'nai-diffusion-4-5-full':S.model):'nai-diffusion-3');
+  const r=await fetch(`${HOST}/ai/generate-image/suggest-tags?model=${md}&prompt=${encodeURIComponent(q)}`);
+  if(!r.ok){if(!acModel&&r.status===400)acModel='nai-diffusion-4-5-full';return acHide()}
   const j=await r.json();if(seq!==acSeq||document.activeElement!==t)return;
-  acList=(j.tags||[]).slice(0,12);if(!acList.length)return acHide();acTa=t;acI=0;acDraw();
-  const rc=t.getBoundingClientRect();ac.style.left=rc.left+'px';ac.style.width=rc.width+'px';ac.style.display='block';
-  const h=ac.offsetHeight;ac.style.top=(rc.bottom+h>innerHeight?Math.max(0,rc.top-h):rc.bottom)+'px';
+  acList=(j.tags||[]).slice(0,10);if(!acList.length)return acHide();acTa=t;acI=0;acDraw();
+  (t.closest('.hl')||t).after(ac);ac.style.display='block';ac.scrollTop=0;
+  const rb=ac.getBoundingClientRect(),fb=$('#foot').getBoundingClientRect().top;if(rb.bottom>fb)ac.scrollIntoView({block:'nearest'});
  }catch{acHide()}
 }
 function acDraw(){ac.innerHTML=acList.map((t,i)=>`<div class="${i===acI?'on':''}" data-i="${i}"><span>${esc(t.tag)}</span><small>${t.count>=1000?(t.count/1000).toFixed(t.count>=1e4?0:1)+'k':t.count??''}</small></div>`).join('')}
