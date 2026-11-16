@@ -60,6 +60,9 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 .card.off{opacity:.45}
 .card .row b{color:var(--mut);font-weight:600;white-space:nowrap}
 .card textarea{min-height:52px;margin-top:6px}
+.card textarea.ch{min-height:150px}
+#v5q{background:var(--p3);border-radius:20px;padding:4px 10px;font-weight:600;font-size:12px;white-space:nowrap}
+#v5q.low{color:var(--bad)}
 .prev{color:var(--mut);font-size:13px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:6px;cursor:pointer;min-height:18px}
 .thumb{width:56px;height:56px;border-radius:4px;object-fit:cover;background:#000;flex:none}
 .grow{flex:1;min-width:0}
@@ -139,7 +142,7 @@ body:not([data-gen="3"]) .o3,body:not([data-gen="5"]) .o5,body:not([data-gen="4.
 </head>
 <body>
 <div id="app">
-<header id="top"><b>NAI Studio</b><span id="anlas" title="Anlas 잔액 새로고침">✦ –</span>
+<header id="top"><b>NAI Studio</b><span id="v5q" class="hide" title="V5 무료 할당량 남은 비율"></span><span id="anlas" title="Anlas 잔액 새로고침">✦ –</span>
  <button class="ic" id="bPreset" title="프리셋"></button><button class="ic" id="bSet" title="토큰 · 앱 설정"></button></header>
 
 <div id="left">
@@ -383,7 +386,7 @@ function refresh(){
  $('#bMask').classList.toggle('on',!!(base&&base.mask));
  $('#refBadge').textContent=((base?1:0)+(model().gen<5?vibes.length:0)+(model().gen===4.5?refs.length:0))||'';
  $('#sumT').textContent=S.prompt.trim()||'프롬프트 입력';
- $('#cost').textContent=costText();
+ $('#cost').textContent=costText();v5Quota();
  $('#gen').classList.toggle('busy',busy);
  $('#genT').textContent=busy?(stopReq?'중지 중… (다시 누르면 취소)':(S.loop?'중지':'취소')):`${S.n}장 생성`;
  $$('#bar button').forEach(b=>b.disabled=!cur);$('#bSeedLast').disabled=!cur;
@@ -462,7 +465,8 @@ function renderChars(){
   <button class="ic" data-c="up" title="위로">${ic('au')}</button><button class="ic" data-c="dn" title="아래로">${ic('ad')}</button>
   <button class="ic" data-c="on" title="켜기/끄기">${ic(on?'check':'x')}</button>
   <button class="ic" data-c="del" title="삭제">${ic('trash')}</button><button class="ic" data-c="fold" title="접기/펼치기">${ic('fold')}</button></div>
-  ${op?`<textarea class="pr" data-f="p" placeholder="girl, ...">${esc(c.p)}</textarea><textarea class="pr" data-f="uc" rows="1" style="min-height:34px" placeholder="캐릭터 UC">${esc(c.uc)}</textarea>`
+  ${op?`<div class="row" style="margin-top:6px"><button class="chip ${c.tab!=='uc'?'on':''}" data-c="tp">프롬프트</button><button class="chip ${c.tab==='uc'?'on':''}" data-c="tu">UC${c.uc.trim()?' ●':''}</button></div>
+   ${c.tab==='uc'?`<textarea class="pr ch" data-f="uc" placeholder="캐릭터 UC">${esc(c.uc)}</textarea>`:`<textarea class="pr ch" data-f="p" placeholder="girl, ...">${esc(c.p)}</textarea>`}`
      :`<div class="prev" data-c="fold">${esc(c.p)||'(비어 있음)'}</div>`}</div>`}).join('');
  refresh();
 }
@@ -471,6 +475,7 @@ $('#chars').addEventListener('input',e=>{const c=e.target.closest('.card');if(c&
 $('#chars').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;const i=+b.closest('.card').dataset.i,a=b.dataset.c,C=S.chars;
  if(a==='del')C.splice(i,1);else if(a==='up'&&i>0)[C[i-1],C[i]]=[C[i],C[i-1]];else if(a==='dn'&&i<C.length-1)[C[i+1],C[i]]=[C[i],C[i+1]];
  else if(a==='on')C[i].on=C[i].on===false;else if(a==='fold')C[i].open=C[i].open===false;
+ else if(a==='tp'||a==='tu'){C[i].tab=a==='tu'?'uc':'p';save();renderChars();const t=$(`#chars .card[data-i="${i}"] textarea`);if(t)t.focus();return}
  save();renderChars()});
 let posI=0;
 $('#bPos').onclick=()=>{posI=Math.min(posI,S.chars.length-1);const p=$('#pad'),ar=S.w/S.h;p.style.aspectRatio=S.w+'/'+S.h;p.style.width=ar>=1?'100%':Math.round(380*ar)+'px';p.style.backgroundSize=model().gen>=5?'10% 10%':'20% 20%';drawPad();open('#mPos')};
@@ -497,9 +502,15 @@ function renderVibes(){
  $('#vibes').innerHTML=vibes.map((v,i)=>`<div class="card" data-i="${i}"><div class="row"><img class="thumb" src="${v.url}"><div class="grow">
   <label class="sl"><div><span>강도</span><output></output></div><input type="range" data-f="str" min="0" max="1" step="0.01" value="${v.str}"></label>
   <label class="sl"><div><span>정보 추출</span><output></output></div><input type="range" data-f="info" min="0.01" max="1" step="0.01" value="${v.info}"></label></div>
-  <button class="ic" data-c="del">${ic('x')}</button></div></div>`).join('');refresh()}
+  <button class="ic" data-c="del">${ic('x')}</button></div></div>`).join('');refresh();persistRefs()}
+let prT,prReady=false;
+function persistRefs(){if(!prReady)return;clearTimeout(prT);prT=setTimeout(()=>{if(!db)return;
+ const v={vibes:vibes.map(({url,b,str,info,enc})=>({url,b,str,info,enc})),refs:refs.map(({url,b,type,str,fid})=>({url,b,type,str,fid}))};
+ try{db.transaction('kv','readwrite').objectStore('kv').put(v,'refs')}catch{}},300)}
+async function restoreRefs(){if(!db)return;try{const v=await new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get('refs');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});
+ if(v){vibes=v.vibes||[];refs=v.refs||[];for(const x of vibes)x.img=await loadImg('data:image/png;base64,'+x.b).catch(()=>null);renderVibes();renderRefs()}}catch{}}
 $('#bAddVibe').onclick=()=>pick(f=>addVibe(f).catch(e=>toast(e.message,1)));
-$('#vibes').addEventListener('input',e=>{const c=e.target.closest('.card');if(c){vibes[+c.dataset.i][e.target.dataset.f]=+e.target.value;refresh()}});
+$('#vibes').addEventListener('input',e=>{const c=e.target.closest('.card');if(c){vibes[+c.dataset.i][e.target.dataset.f]=+e.target.value;refresh();persistRefs()}});
 $('#vibes').addEventListener('click',e=>{if(e.target.closest('[data-c]')){vibes.splice(+e.target.closest('.card').dataset.i,1);renderVibes()}});
 async function addRef(blob){const img=await loadImg(URL.createObjectURL(blob)),ar=img.width/img.height;const [w,h]=ar<.8?[1024,1536]:ar>1.25?[1536,1024]:[1472,1472];
  const c=contain(img,w,h);refs.push({url:c.toDataURL('image/jpeg',.6),b:b64(c),type:'character&style',str:1,fid:1});renderRefs()}
@@ -509,9 +520,9 @@ function renderRefs(){
   <label class="sl" style="margin-top:6px"><div><span>강도</span><output></output></div><input type="range" data-f="str" min="0" max="1" step="0.01" value="${v.str}"></label>
   <label class="sl"><div><span>충실도</span><output></output></div><input type="range" data-f="fid" min="0" max="1" step="0.01" value="${v.fid}"></label></div>
   <button class="ic" data-c="del">${ic('x')}</button></div></div>`).join('');
- $$('#refs select').forEach((s,i)=>s.value=refs[i].type);refresh()}
+ $$('#refs select').forEach((s,i)=>s.value=refs[i].type);refresh();persistRefs()}
 $('#bAddRef').onclick=()=>pick(f=>addRef(f).catch(e=>toast(e.message,1)));
-$('#refs').addEventListener('input',e=>{const c=e.target.closest('.card'),f=e.target.dataset.f;if(c){refs[+c.dataset.i][f]=f==='type'?e.target.value:+e.target.value;refresh()}});
+$('#refs').addEventListener('input',e=>{const c=e.target.closest('.card'),f=e.target.dataset.f;if(c){refs[+c.dataset.i][f]=f==='type'?e.target.value:+e.target.value;refresh();persistRefs()}});
 $('#refs').addEventListener('click',e=>{if(e.target.closest('[data-c]')){refs.splice(+e.target.closest('.card').dataset.i,1);renderRefs()}});
 
 /* ---------- mask editor ---------- */
@@ -552,8 +563,11 @@ async function unzip(u8){
 async function refreshAnlas(){
  if(!tok)return;
  try{const j=await (await fetch(HOST+'/user/subscription',{headers:{Authorization:'Bearer '+tok}})).json();const t=j.trainingStepsLeft||{};
-  opus=j.tier===3;$('#anlas').textContent='✦ '+((t.fixedTrainingStepsLeft||0)+(t.purchasedTrainingSteps||0)).toLocaleString();refresh()}catch{}
+  opus=j.tier===3;$('#anlas').textContent='✦ '+((t.fixedTrainingStepsLeft||0)+(t.purchasedTrainingSteps||0)).toLocaleString();usage=j.usage||null;refresh()}catch{}
 }
+let usage=null;
+function v5Quota(){const el=$('#v5q'),u=usage,show=model().gen>=5&&u&&typeof u.percent==='number';el.classList.toggle('hide',!show);if(!show)return;
+ const p=u.isNegative?0:u.percent;el.textContent='V5 '+p+'%';el.classList.toggle('low',p<10)}
 $('#anlas').onclick=refreshAnlas;
 const rnd=s=>s.replace(/\|\|([^]*?)\|\|/g,(_,g)=>{const a=g.split('|');return a[Math.floor(Math.random()*a.length)]});
 async function buildPayload(seed){
@@ -577,7 +591,7 @@ async function buildPayload(seed){
   else{action='img2img';p.strength=S.strength}}
  if(m.gen<5&&vibes.length&&!(p4&&base&&base.mask)){
   if(p4){const enc=[];for(const v of vibes){const k=m.id+'|'+v.info;if(!v.enc[k]){spin('바이브 인코딩…');v.enc[k]=await blobB64(await (await api('/ai/encode-vibe',{image:v.b,information_extracted:v.info,model:m.id})).blob())}enc.push(v.enc[k])}
-   p.reference_image_multiple=enc;p.reference_strength_multiple=vibes.map(v=>v.str)}
+   persistRefs();p.reference_image_multiple=enc;p.reference_strength_multiple=vibes.map(v=>v.str)}
   else{p.reference_image_multiple=vibes.map(v=>b64(contain(v.img,448,448)));p.reference_information_extracted_multiple=vibes.map(v=>v.info);p.reference_strength_multiple=vibes.map(v=>v.str)}
  }
  if(m.gen===4.5&&refs.length)Object.assign(p,{director_reference_images:refs.map(r=>r.b),director_reference_descriptions:refs.map(r=>({caption:{base_caption:r.type,char_captions:[]},legacy_uc:false})),
@@ -605,7 +619,7 @@ async function generate(){
 $('#gen').onclick=generate;
 
 /* ---------- history ---------- */
-function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('nai_studio',1);r.onupgradeneeded=()=>r.result.createObjectStore('imgs',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('nai_studio',2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('imgs'))d.createObjectStore('imgs',{keyPath:'id',autoIncrement:true});if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 const tx=(mode,fn)=>new Promise((res,rej)=>{if(!db)return res();const t=db.transaction('imgs',mode),q=fn(t.objectStore('imgs'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)});
 async function addItem(blob,meta){const it={blob,meta,t:Date.now()};try{it.id=await tx('readwrite',s=>s.add(it))}catch{}if(it.id==null)it.id='m'+Date.now()+Math.random();it.url=URL.createObjectURL(blob);items.unshift(it);renderHist();return it}
 function renderHist(){$('#histG').innerHTML=items.slice(0,300).map(it=>`<img loading="lazy" data-id="${it.id}" src="${it.url}" class="${cur===it?'on':''}">`).join('')||'<div class="mut">아직 없음</div>'}
@@ -704,6 +718,7 @@ document.addEventListener('keydown',e=>{
  S.imp=Object.assign({},DEF.imp,S.imp);
  modelUI();bindAll();renderChars();renderHist();show(null);setSheet(LS.nai_sheet!=='c');
  try{db=await idb();const all=await tx('readonly',s=>s.getAll());items=(all||[]).reverse().map(it=>(it.url=URL.createObjectURL(it.blob),it));renderHist();if(items[0])show(items[0])}catch{}
+ await restoreRefs();prReady=true;
  if(tok)refreshAnlas();else open('#mSet');
 })();
 </script>
