@@ -546,6 +546,10 @@ $('#bLoop').onclick=()=>{S.loop=!S.loop;save();refresh()};
 $('#bBig').onclick=()=>{$$('#tPrompt,#tUc').forEach(t=>t.classList.toggle('big'));$('#bBig').classList.toggle('on')};
 function pTab(t){$$('#ptabs button').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));$('#tabP').classList.toggle('hide',t!=='P');$('#tabR').classList.toggle('hide',t!=='R');$('#tabC').classList.toggle('hide',t!=='C');if(t==='C')renderChunks()}
 $$('#ptabs button').forEach(b=>b.onclick=()=>pTab(b.dataset.tab));
+const TABS=['P','R','C'];let sw=null;
+$('#pBody').addEventListener('touchstart',e=>{const t=e.target;if(e.touches.length!==1||t.closest('input[type=range],#ac,select,.ns,#chars .seg,.seg'))return sw=null;sw={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()}},{passive:true});
+$('#pBody').addEventListener('touchend',e=>{if(!sw)return;const c=e.changedTouches[0],dx=c.clientX-sw.x,dy=c.clientY-sw.y;const ok=Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.8&&Date.now()-sw.t<700;sw=null;if(!ok)return;
+ const cur=$('#ptabs button.on').dataset.tab,i=TABS.indexOf(cur),n=i+(dx<0?1:-1);if(n>=0&&n<TABS.length)pTab(TABS[n])},{passive:true});
 $$('.modal').forEach(m=>m.addEventListener('pointerdown',e=>{if(e.target===m||e.target.closest('[data-close]'))m.classList.remove('on')}));
 const open=id=>$(id).classList.add('on'), close=id=>$(id).classList.remove('on');
 /* mobile: overlays + bottom sheet */
