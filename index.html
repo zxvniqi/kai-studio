@@ -101,8 +101,10 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 #mkStage{flex:1;position:relative;overflow:hidden;touch-action:none;cursor:crosshair}
 #mkLayer{position:absolute;left:0;top:0;transform-origin:0 0}
 #mkLayer img,#mkLayer canvas{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated}
-#mkTop{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2}
-#mkTool{position:absolute;top:10px;left:10px;z-index:2;background:#13152ce8;border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:flex;gap:10px;align-items:center;width:min(250px,calc(100vw - 180px))}
+#mkTop{position:absolute;top:10px;left:10px;display:flex;gap:0;z-index:2;background:var(--p2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+#mkTop button{border-radius:0;height:40px}
+#mkMore{position:absolute;left:10px;bottom:62px;z-index:3;display:flex;gap:4px;background:#13152cf2;border:1px solid var(--line);border-radius:6px;padding:6px}
+#mkTool{position:absolute;top:60px;left:10px;z-index:2;background:#13152ce8;border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:flex;gap:10px;align-items:center;width:min(250px,calc(100vw - 20px))}
 #mkTool .mkT{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mut);min-width:48px;text-align:center}
 #mkTool .mkT svg{width:20px;height:20px;color:var(--tx)}
 #mkPal{position:absolute;left:10px;right:10px;bottom:62px;z-index:3;background:#13152cf2;border:1px solid var(--line);border-radius:8px;padding:12px;max-width:340px}
@@ -254,7 +256,8 @@ body.med .adv{display:none!important}
   <button class="ic" data-a="copy" title="복사"></button>
   <button class="ic" data-a="seed" title="이 시드 사용"></button>
   <button class="ic" data-a="load" title="이 설정 불러오기"></button>
-  <button class="ic" data-a="i2i" title="이미지→이미지로"></button>
+  <button class="ic" data-a="i2i" title="기본 이미지로 사용 (이미지→이미지)"></button>
+  <button class="ic" data-a="inp" title="인페인트"></button>
   <button class="ic" data-a="up" title="업스케일 4x"></button>
   <button class="ic" data-a="del" title="삭제"></button>
  </div>
@@ -292,13 +295,14 @@ body.med .adv{display:none!important}
 
 <div id="mkEd" class="hide">
  <div id="mkStage"><div id="mkLayer"><img id="maskImg"><canvas id="maskCv"></canvas></div></div>
- <div id="mkTop"><button class="pri" id="mkOk">저장 후 닫기</button><button class="ic" id="mkX" title="닫기"></button></div>
+ <div id="mkTop"><button class="ic" id="mkDl" title="캔버스 PNG로 저장"></button><button class="pri" id="mkOk">저장 후 닫기</button><button class="ic" id="mkX" title="닫기"></button></div>
  <div id="mkTool"><div class="mkT"><span id="mkTI"></span><span id="mkTN">마스크 칠하기</span></div>
   <div class="grow"><div style="font-size:12px">펜 크기: <b id="mkSv"></b></div><input type="range" id="mkSize" min="1" max="40" value="4">
   <label class="row" style="font-size:12px;margin-top:2px"><input type="checkbox" id="mkSq"> 사각 브러시</label></div></div>
  <div id="mkPal" class="hide"><div class="mut">마스크 색</div><div class="sw" id="mkSw"></div>
   <div class="mut">마스크 불투명도: <b id="mkOv"></b></div><input type="range" id="mkOp" min="10" max="100" step="5"></div>
- <div id="mkBar"><button class="ic on" id="mkDraw" title="마스크 칠하기"></button><button class="ic" id="mkErase" title="마스크 지우기"></button>
+ <div id="mkMore" class="hide"><button class="ic" data-t="draw" title="마스크 칠하기"></button><button class="ic" data-t="erase" title="마스크 지우기"></button><button class="ic" data-t="fill" title="채우기"></button></div>
+ <div id="mkBar"><button class="ic on" id="mkCur" title="현재 도구"></button><button class="ic" id="mkMoreB" title="도구 더보기"></button>
   <span class="sp"></span><button class="ic" id="mkPalB" title="마스크 색"></button><button class="ic" id="mkClear" title="모두 지우기"></button>
   <span class="sp"></span><button class="ic" id="mkUndo" title="실행 취소"></button><button class="ic" id="mkRedo" title="다시 실행"></button></div>
 </div>
@@ -343,6 +347,7 @@ brush:'<path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L11 16l-4 1 1-4z"/><path d="M3 21c3 0
 loop:'<path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
 au:'<path d="M18 15l-6-6-6 6"/>',ad:'<path d="M6 9l6 6 6-6"/>',fold:'<path d="M7 9l5-5 5 5M7 15l5 5 5-5"/>',grid:'<path d="M3 3h18v18H3zM3 12h18M12 3v18"/>',big:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'};
 I.pal='<circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16" cy="10" r="1"/><path d="M12 21a2 2 0 0 1 0-4h2a3 3 0 0 0 3-3"/>';I.undo='<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>';I.redo='<path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>';
+I.wand='<path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8L19 13M17.8 6.2L19 5M3 21l9-9M12.2 6.2L11 5"/>';I.fill='<path d="M19 11l-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2a2 2 0 0 0 2.8 0z"/><path d="M5 2l5 5M2 13h15M22 20a2 2 0 1 1-4 0c0-1.6 2-4 2-4s2 2.4 2 4z"/>';I.more='<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>';
 I.i2i='<path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M3 21v-5h5"/>';I.vibe='<rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 15v4a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-4"/>';I.idc='<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5 16c1-2 5-2 6 0M14 10h5M14 14h5"/>';
 const ic=n=>`<svg viewBox="0 0 24 24">${I[n]}</svg>`;
 
@@ -397,9 +402,9 @@ const r64=v=>Math.max(64,Math.round(v/64)*64);
 /* ---------- static UI ---------- */
 const setIc=(sel,n)=>$$(sel).forEach(e=>e.innerHTML=ic(n));
 setIc('#bSet','menu');setIc('#bGear','sliders');setIc('#bHist','clock');setIc('#bPreset','book');setIc('#bAddBase,#bAddVibe,#bAddRef','upl');$$('.ri[data-ic]').forEach(e=>e.innerHTML=ic(e.dataset.ic));setIc('#bAddCh','plus');
-setIc('[data-close],[data-pclose],#bDelBase,#bSeedX','x');setIc('#bSwap','swap');setIc('#bMask,#mkDraw','brush');setIc('#mkErase','erase');setIc('#mkClear','trash');setIc('#mkX','x');setIc('#mkPalB','pal');setIc('#mkUndo','undo');setIc('#mkRedo','redo');
+setIc('[data-close],[data-pclose],#bDelBase,#bSeedX','x');setIc('#bSwap','swap');setIc('#bMask,#mkDraw','brush');setIc('#mkErase','erase');setIc('#mkClear','trash');setIc('#mkX','x');setIc('#mkDl','save');setIc('#mkMoreB','more');setIc('#mkPalB','pal');setIc('#mkUndo','undo');setIc('#mkRedo','redo');
 setIc('#bLoop','loop');setIc('#bRndX','x');setIc('#bRndRe','load');setIc('#bDice','dice');setIc('#bBig','big');setIc('#bPos','grid');setIc('#bSeedLast','seed');$('#sumA').innerHTML=ic('au');
-$$('#bar [data-a]').forEach(b=>b.innerHTML=ic({save:'save',copy:'copy',seed:'seed',load:'load',i2i:'img',up:'up',del:'trash'}[b.dataset.a]));
+$$('#bar [data-a]').forEach(b=>b.innerHTML=ic({save:'save',copy:'copy',seed:'seed',load:'load',i2i:'wand',inp:'brush',up:'up',del:'trash'}[b.dataset.a]));
 opts($('#model'),MODELS.map(m=>[m.id,m.name]));
 opts($('#res'),[...RES.map(r=>[r[1]+'x'+r[2],`${r[0]} (${r[1]}×${r[2]})`]),['c','직접 입력']]);
 
@@ -590,14 +595,16 @@ $('#refs').addEventListener('click',e=>{if(e.target.closest('[data-c]')){refs.sp
 /* ---------- mask editor ---------- */
 const mc=$('#maskCv'),mx=mc.getContext('2d'),mkSt=$('#mkStage'),mkL=$('#mkLayer');
 const MKC=['#6c63ff','#f5c518','#e040fb','#26c6da','#ef5350','#66bb6a','#ab47bc','#ffa726','#42a5f5','#c6c35a'];
-let mk={erase:false,s:1,tx:0,ty:0,undo:[],redo:[],ptrs:new Map(),last:null,pinch:null,drawing:false};
-const MPD={size:4,sq:true,col:MKC[0],op:50};
+let mk={tool:'draw',s:1,tx:0,ty:0,undo:[],redo:[],ptrs:new Map(),last:null,pinch:null,drawing:false};
+const MPD={size:4,sq:false,col:MKC[0],op:50};
 let MP=(()=>{try{return Object.assign({},MPD,JSON.parse(LS.nai_mk||'{}'))}catch{return Object.assign({},MPD)}})();
 const mkSave=()=>{LS.nai_mk=JSON.stringify(MP)};
 function mkView(){mkL.style.transform=`translate(${mk.tx}px,${mk.ty}px) scale(${mk.s})`}
 function mkFit(){const r=mkSt.getBoundingClientRect();mk.s=Math.min(r.width/S.w,r.height/S.h)*.96;mk.tx=(r.width-S.w*mk.s)/2;mk.ty=(r.height-S.h*mk.s)/2;mkView()}
 function mkUI(){$('#mkSv').textContent=MP.size;$('#mkSize').value=MP.size;$('#mkSq').checked=MP.sq;$('#mkOp').value=MP.op;$('#mkOv').textContent=MP.op+'%';mc.style.opacity=MP.op/100;
- $('#mkDraw').classList.toggle('on',!mk.erase);$('#mkErase').classList.toggle('on',mk.erase);$('#mkTI').innerHTML=ic(mk.erase?'erase':'brush');$('#mkTN').textContent=mk.erase?'마스크 지우기':'마스크 칠하기';
+ const TI={draw:['brush','마스크 칠하기'],erase:['erase','마스크 지우기'],fill:['fill','채우기']}[mk.tool];$('#mkCur').innerHTML=ic(TI[0]);$('#mkTI').innerHTML=ic(TI[0]);$('#mkTN').textContent=TI[1];
+ $$('#mkMore [data-t]').forEach(b=>{b.innerHTML=ic({draw:'brush',erase:'erase',fill:'fill'}[b.dataset.t]);b.classList.toggle('hide',b.dataset.t===mk.tool)});
+ $('#mkTool .grow').classList.toggle('hide',mk.tool==='fill');
  $('#mkSw').innerHTML=MKC.map(c=>`<button data-c="${c}" class="${c===MP.col?'on':''}" style="background:${c}"></button>`).join('');
  $('#mkUndo').disabled=!mk.undo.length;$('#mkRedo').disabled=!mk.redo.length}
 const mkSnap=()=>mx.getImageData(0,0,mc.width,mc.height);
@@ -606,15 +613,15 @@ function mkRecolor(){mx.save();mx.globalCompositeOperation='source-in';mx.fillSt
 $('#bMask').onclick=()=>{if(!base)return;mc.width=S.w;mc.height=S.h;mkL.style.width=S.w+'px';mkL.style.height=S.h+'px';
  const c=cv(S.w,S.h);c.getContext('2d').drawImage(base.img,0,0,S.w,S.h);$('#maskImg').src=c.toDataURL('image/jpeg',.9);
  mx.clearRect(0,0,S.w,S.h);if(base.mask){mx.drawImage(base.mask,0,0,S.w,S.h);mkRecolor()}
- mk.undo=[];mk.redo=[];mk.erase=false;$('#mkPal').classList.add('hide');$('#mkEd').classList.remove('hide');mkFit();mkUI()};
+ mk.undo=[];mk.redo=[];mk.tool='draw';$('#mkPal').classList.add('hide');$('#mkMore').classList.add('hide');$('#mkEd').classList.remove('hide');mkFit();mkUI()};
 function mkPt(e){const r=mkSt.getBoundingClientRect();return [(e.clientX-r.left-mk.tx)/mk.s,(e.clientY-r.top-mk.ty)/mk.s]}
-function mkDot(x,y){const d=MP.size*8;mx.globalCompositeOperation=mk.erase?'destination-out':'source-over';mx.fillStyle=MP.col;
+function mkDot(x,y){const d=MP.size*8;mx.globalCompositeOperation=mk.tool==='erase'?'destination-out':'source-over';mx.fillStyle=MP.col;
  if(MP.sq){const g=8,n=Math.max(1,Math.round(d/g))*g,x0=Math.floor((x-n/2)/g+.5)*g,y0=Math.floor((y-n/2)/g+.5)*g;mx.fillRect(x0,y0,n,n)}
  else{mx.beginPath();mx.arc(x,y,d/2,0,7);mx.fill()}}
 function mkLine(p){const q=mk.last||p,dist=Math.hypot(p[0]-q[0],p[1]-q[1]),n=Math.max(1,Math.ceil(dist/4));
  for(let i=1;i<=n;i++)mkDot(q[0]+(p[0]-q[0])*i/n,q[1]+(p[1]-q[1])*i/n);mk.last=p}
-mkSt.addEventListener('pointerdown',e=>{try{mkSt.setPointerCapture(e.pointerId)}catch{}mk.ptrs.set(e.pointerId,[e.clientX,e.clientY]);$('#mkPal').classList.add('hide');
- if(mk.ptrs.size===1){mkPush();mk.drawing=true;const p=mkPt(e);mkDot(...p);mk.last=p}
+mkSt.addEventListener('pointerdown',e=>{try{mkSt.setPointerCapture(e.pointerId)}catch{}mk.ptrs.set(e.pointerId,[e.clientX,e.clientY]);$('#mkPal').classList.add('hide');$('#mkMore').classList.add('hide');
+ if(mk.ptrs.size===1){mkPush();if(mk.tool==='fill'){mkFill(...mkPt(e))}else{mk.drawing=true;const p=mkPt(e);mkDot(...p);mk.last=p}}
  else if(mk.ptrs.size===2){if(mk.drawing){mx.putImageData(mk.undo.pop(),0,0);mk.drawing=false}
   const [a,b]=[...mk.ptrs.values()];mk.pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1])||1,cx:(a[0]+b[0])/2,cy:(a[1]+b[1])/2,s:mk.s,tx:mk.tx,ty:mk.ty}}
  mkUI()});
@@ -627,10 +634,18 @@ const mkEnd=e=>{mk.ptrs.delete(e.pointerId);if(mk.ptrs.size<2)mk.pinch=null;if(!
 mkSt.addEventListener('pointerup',mkEnd);mkSt.addEventListener('pointercancel',mkEnd);
 mkSt.addEventListener('wheel',e=>{e.preventDefault();const r=mkSt.getBoundingClientRect(),s=Math.max(.1,Math.min(12,mk.s*Math.exp(-e.deltaY/400))),px=e.clientX-r.left,py=e.clientY-r.top;
  mk.tx=px-(px-mk.tx)*s/mk.s;mk.ty=py-(py-mk.ty)*s/mk.s;mk.s=s;mkView()},{passive:false});
-$('#mkDraw').onclick=()=>{mk.erase=false;mkUI()};$('#mkErase').onclick=()=>{mk.erase=true;mkUI()};
+$('#mkMoreB').onclick=()=>{$('#mkMore').classList.toggle('hide');$('#mkPal').classList.add('hide')};
+$('#mkCur').onclick=()=>$('#mkMore').classList.add('hide');
+$('#mkMore').onclick=e=>{const b=e.target.closest('[data-t]');if(b){mk.tool=b.dataset.t;$('#mkMore').classList.add('hide');mkUI()}};
+function mkFill(x,y){const g=8,W=Math.ceil(mc.width/g),H=Math.ceil(mc.height/g),cx=Math.floor(x/g),cy=Math.floor(y/g);if(cx<0||cy<0||cx>=W||cy>=H){mk.undo.pop();return}
+ const d=mx.getImageData(0,0,mc.width,mc.height).data,occ=new Uint8Array(W*H);
+ for(let j=0;j<H;j++)for(let i=0;i<W;i++){let f=0;for(let yy=j*g;yy<Math.min(j*g+g,mc.height)&&!f;yy++)for(let xx=i*g;xx<Math.min(i*g+g,mc.width);xx++)if(d[(yy*mc.width+xx)*4+3]>20){f=1;break}occ[j*W+i]=f}
+ if(occ[cy*W+cx]){mk.undo.pop();return}const st=[cy*W+cx],seen=new Uint8Array(W*H);seen[st[0]]=1;mx.globalCompositeOperation='source-over';mx.fillStyle=MP.col;
+ while(st.length){const k=st.pop(),i=k%W,j=(k-i)/W;mx.fillRect(i*g,j*g,g,g);for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){const a=i+di,b=j+dj;if(a<0||b<0||a>=W||b>=H)continue;const n=b*W+a;if(!seen[n]&&!occ[n]){seen[n]=1;st.push(n)}}}}
+$('#mkDl').onclick=()=>{const c=cv(mc.width,mc.height),x=c.getContext('2d');x.drawImage(base.img,0,0,c.width,c.height);x.globalAlpha=MP.op/100;x.drawImage(mc,0,0);const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='nai_canvas.png';a.click()};
 $('#mkSize').oninput=e=>{MP.size=+e.target.value;mkSave();mkUI()};$('#mkSq').onchange=e=>{MP.sq=e.target.checked;mkSave()};
 $('#mkOp').oninput=e=>{MP.op=+e.target.value;mkSave();mkUI()};
-$('#mkPalB').onclick=()=>$('#mkPal').classList.toggle('hide');
+$('#mkPalB').onclick=()=>{$('#mkPal').classList.toggle('hide');$('#mkMore').classList.add('hide')};
 $('#mkSw').onclick=e=>{const b=e.target.closest('[data-c]');if(b){MP.col=b.dataset.c;mkSave();mkRecolor();mkUI()}};
 $('#mkClear').onclick=()=>{mkPush();mx.clearRect(0,0,mc.width,mc.height);mkUI()};
 $('#mkUndo').onclick=()=>{if(!mk.undo.length)return;mk.redo.push(mkSnap());mx.putImageData(mk.undo.pop(),0,0);mkUI()};
@@ -639,7 +654,10 @@ const mkClose=()=>{$('#mkEd').classList.add('hide');refresh()};
 $('#mkX').onclick=mkClose;
 $('#mkOk').onclick=()=>{const d=mx.getImageData(0,0,mc.width,mc.height).data;let any=false;for(let i=3;i<d.length;i+=4)if(d[i]>20){any=true;break}
  if(any){const c=cv(mc.width,mc.height);c.getContext('2d').drawImage(mc,0,0);base.mask=c}else base.mask=null;mkClose()};
-function maskB64(){const c=cv(S.w,S.h),x=c.getContext('2d');x.drawImage(base.mask,0,0,S.w,S.h);x.globalCompositeOperation='source-in';x.fillStyle='#fff';x.fillRect(0,0,S.w,S.h);x.globalCompositeOperation='destination-over';x.fillStyle='#000';x.fillRect(0,0,S.w,S.h);return b64(c)}
+function maskB64(){const W=S.w,H=S.h,g=8,src=cv(W,H),sx=src.getContext('2d');sx.drawImage(base.mask,0,0,W,H);const d=sx.getImageData(0,0,W,H).data;
+ const c=cv(W,H),x=c.getContext('2d');x.fillStyle='#000';x.fillRect(0,0,W,H);x.fillStyle='#fff';
+ for(let j=0;j<H;j+=g)for(let i=0;i<W;i+=g){let f=false;for(let yy=j;yy<Math.min(j+g,H)&&!f;yy++)for(let xx=i;xx<Math.min(i+g,W);xx++)if(d[(yy*W+xx)*4+3]>20){f=true;break}if(f)x.fillRect(i,j,g,g)}
+ return b64(c)}
 
 /* ---------- API ---------- */
 async function api(path,body){
@@ -736,6 +754,7 @@ $('#bar').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b||!cur)ret
   else if(a==='seed'){S.seed=String(it.meta.seed);save();bindAll();toast('시드 '+S.seed)}
   else if(a==='load'){if(it.meta.snap){const o=JSON.parse(it.meta.snap);o.seed=S.seed;applySnap(o);toast('설정 불러옴')}}
   else if(a==='i2i'){await setBase(it.blob);pTab('R');toast('이미지→이미지 설정됨')}
+  else if(a==='inp'){await setBase(it.blob);pTab('R');$('#bMask').click()}
   else if(a==='del'){if(typeof it.id==='number')await tx('readwrite',s=>s.delete(it.id));const i=items.indexOf(it);items.splice(i,1);URL.revokeObjectURL(it.url);renderHist();show(items[i]||items[i-1])}
   else if(a==='up'){if(busy)return;if(!tok)return open('#mSet');busy=true;ctl=new AbortController;refresh();spinT0=0;spin('업스케일 중…');
    try{const r=await api('/ai/upscale',{image:await blobB64(it.blob),width:it.meta.w,height:it.meta.h,scale:4});const bl=await unzip(new Uint8Array(await r.arrayBuffer()));
@@ -745,8 +764,24 @@ $('#bar').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b||!cur)ret
 };
 
 /* ---------- image import (metadata / i2i / vibe / ref) ---------- */
-async function readMeta(blob){try{const u=new Uint8Array(await blob.arrayBuffer()),dv=new DataView(u.buffer);if(dv.getUint32(0)!==0x89504e47)return null;let o=8;const td=new TextDecoder('latin1');
- while(o<u.length-12){const len=dv.getUint32(o),type=td.decode(u.subarray(o+4,o+8));if(type==='tEXt'){const s=td.decode(u.subarray(o+8,o+8+len)),z=s.indexOf('\0');if(s.slice(0,z)==='Comment')return JSON.parse(new TextDecoder().decode(u.subarray(o+9+z,o+8+len)))}if(type==='IEND')break;o+=12+len}}catch{}return null}
+const inflate=async(u,fmt)=>new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream(fmt))).arrayBuffer());
+function metaFrom(o){if(!o)return null;if(typeof o==='string'){try{o=JSON.parse(o)}catch{return null}}
+ if(o.Comment)return metaFrom(o.Comment);if(o.prompt!=null||o.v4_prompt||o.steps!=null)return o;return null}
+async function readChunks(blob){const u=new Uint8Array(await blob.arrayBuffer()),dv=new DataView(u.buffer);if(u.length<8||dv.getUint32(0)!==0x89504e47)return null;let o=8;const td=new TextDecoder('latin1'),tu=new TextDecoder();
+ while(o<u.length-12){const len=dv.getUint32(o),type=td.decode(u.subarray(o+4,o+8)),c=u.subarray(o+8,o+8+len);
+  if(type==='tEXt'||type==='iTXt'||type==='zTXt'){const z=c.indexOf(0),key=td.decode(c.subarray(0,z));let txt=null;
+   if(type==='tEXt')txt=tu.decode(c.subarray(z+1));
+   else if(type==='zTXt')txt=tu.decode(await inflate(c.subarray(z+2),'deflate'));
+   else{const cf=c[z+1];let p=z+3;p=c.indexOf(0,p)+1;p=c.indexOf(0,p)+1;const body=c.subarray(p);txt=tu.decode(cf?await inflate(body,'deflate'):body)}
+   if(key==='Comment'){const m=metaFrom(txt);if(m)return m}else if(/^(parameters|Description)$/.test(key)){}}
+  if(type==='IEND')break;o+=12+len}return null}
+async function readStealth(blob){const bm=await createImageBitmap(blob,{premultiplyAlpha:'none',colorSpaceConversion:'none'});const W=bm.width,H=bm.height;
+ const c=cv(W,H),x=c.getContext('2d',{willReadFrequently:true});x.drawImage(bm,0,0);const d=x.getImageData(0,0,W,H).data;
+ let bit=0;const get=n=>{const out=new Uint8Array(n);for(let k=0;k<n*8;k++,bit++){const px=Math.floor(bit/H),py=bit%H;if(px>=W)throw 0;out[k>>3]|=(d[(py*W+px)*4+3]&1)<<(7-(k&7))}return out};
+ const sig=new TextDecoder().decode(get(15));if(sig!=='stealth_pngcomp'&&sig!=='stealth_pnginfo')return null;
+ const lb=get(4),bits=(lb[0]<<24|lb[1]<<16|lb[2]<<8|lb[3])>>>0;let data=get(Math.ceil(bits/8));
+ if(sig==='stealth_pngcomp')data=await inflate(data,'gzip');return metaFrom(new TextDecoder().decode(data))}
+async function readMeta(blob){try{const m=await readChunks(blob);if(m)return m}catch{}try{return await readStealth(blob)}catch{}return null}
 function applyMeta(j){
  const f=S.imp,o={},v=j.v4_prompt&&j.v4_prompt.caption,n=j.v4_negative_prompt&&j.v4_negative_prompt.caption;
  if(f.p||f.c)o.rnd=null;
