@@ -118,6 +118,8 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 #mkShape .ic{min-width:30px;height:30px;font-size:14px}
 .ph{font-size:14px}
 .bsep{flex:none;width:6px}
+#bOld{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:3;border-radius:16px;padding:7px 14px;font-weight:700;font-size:13px;background:#22253fe6;border:1px solid var(--line);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#bOld.on{background:var(--acc);color:#13152c}
 #bar{position:relative}
 #barMenu{position:fixed;z-index:30;background:var(--p2);border:1px solid var(--line);border-radius:6px;display:flex;flex-direction:column;min-width:160px;overflow:hidden}
 #barMenu button{background:none;border-radius:0;text-align:left;padding:10px 14px}
@@ -289,6 +291,7 @@ body.med .adv{display:none!important}
   <div id="barMenu" class="hide"><button data-a="inp">인페인트</button><button data-a="dir">디렉터 툴</button><button data-a="load">이 설정 불러오기</button><button data-a="seed">이 시드 사용</button><button data-a="del">삭제</button></div>
  </div>
  <div id="view"></div>
+ <button id="bOld" class="hide" title="꾹 누르면 원본 보기">✦ OLD</button>
  <div id="spin"><div><i></i><span id="spinT"></span></div></div>
 </main>
 <aside id="hist"><div class="phead"><span>기록</span><button class="ic" data-pclose></button></div><div id="histG"></div>
@@ -330,8 +333,8 @@ body.med .adv{display:none!important}
   <div class="row pnt" id="mkShape" style="margin-top:4px"><button class="ic" data-b="round" title="둥근 붓">●</button><button class="ic" data-b="soft" title="부드러운 붓" style="opacity:.6">●</button><button class="ic" data-b="square" title="사각 붓">■</button></div></div></div>
  <div id="mkPal" class="hide"><div class="mut">마스크 색</div><div class="sw" id="mkSw"></div>
   <div class="mut">마스크 불투명도: <b id="mkOv"></b></div><input type="range" id="mkOp" min="10" max="100" step="5"></div>
- <div id="mkMore" class="hide"><button class="ic" data-t="draw" title="그리기"></button><button class="ic" data-t="erase" title="지우기"></button><button class="ic msk" data-t="fill" title="채우기"></button><button class="ic pnt" data-t="pick" title="색 추출"></button></div>
- <div id="mkBar"><button class="ic on" id="mkCur" title="현재 도구"></button><button class="ic" id="mkMoreB" title="도구 더보기"></button>
+ <div id="mkMore" class="hide"><button class="ic msk" data-t="fill" title="채우기"></button><button class="ic pnt" data-t="pick" title="색 추출"></button></div>
+ <div id="mkBar"><button class="ic" id="mkDrawB" title="그리기"></button><button class="ic" id="mkEraseB" title="지우개"></button><button class="ic" id="mkMoreB" title="도구 더보기"></button>
   <span class="sp"></span><button class="ic msk" id="mkPalB" title="마스크 색"></button><button class="ic" id="mkClear" title="모두 지우기"></button>
   <span class="sp"></span><button class="ic" id="mkUndo" title="실행 취소"></button><button class="ic" id="mkRedo" title="다시 실행"></button></div>
 </div>
@@ -669,7 +672,7 @@ function mkView(){mkL.style.transform=`translate(${mk.tx}px,${mk.ty}px) scale(${
 function mkFit(){const r=mkSt.getBoundingClientRect();mk.s=Math.min(r.width/S.w,r.height/S.h)*.96;mk.tx=(r.width-S.w*mk.s)/2;mk.ty=(r.height-S.h*mk.s)/2;mkView()}
 function mkUI(){const P=isP();$('#mkEd').classList.toggle('paint',P);$('#mkSize').max=P?120:40;$('#mkSv').textContent=P?MP.psize:MP.size;$('#mkSize').value=P?MP.psize:MP.size;$('#mkSq').checked=MP.sq;$('#mkOp').value=MP.op;$('#mkOv').textContent=MP.op+'%';mc.style.opacity=P?1:MP.op/100;
  $('#mkCol').value=MP.pcol;$$('#mkShape [data-b]').forEach(b=>b.classList.toggle('on',b.dataset.b===MP.shape));
- const TI={draw:['brush',P?'그리기':'마스크 칠하기'],erase:['erase',P?'지우기':'마스크 지우기'],fill:['fill','채우기'],pick:['pick','색 추출']}[mk.tool];$('#mkCur').innerHTML=ic(TI[0]);$('#mkTI').innerHTML=ic(TI[0]);$('#mkTN').textContent=TI[1];
+ const TI={draw:['brush',P?'그리기':'마스크 칠하기'],erase:['erase',P?'지우기':'마스크 지우기'],fill:['fill','채우기'],pick:['pick','색 추출']}[mk.tool];$('#mkDrawB').innerHTML=ic('brush');$('#mkEraseB').innerHTML=ic('erase');$('#mkDrawB').classList.toggle('on',mk.tool==='draw');$('#mkEraseB').classList.toggle('on',mk.tool==='erase');$('#mkMoreB').classList.toggle('on',mk.tool==='fill'||mk.tool==='pick');$('#mkTI').innerHTML=ic(TI[0]);$('#mkTN').textContent=TI[1];
  $$('#mkMore [data-t]').forEach(b=>{b.innerHTML=ic({draw:'brush',erase:'erase',fill:'fill',pick:'pick'}[b.dataset.t]);b.classList.toggle('hide',b.dataset.t===mk.tool)});
  $('#mkTool .grow').classList.toggle('hide',mk.tool==='fill'||mk.tool==='pick');
  $('#mkSw').innerHTML=MKC.map(c=>`<button data-c="${c}" class="${c===MP.col?'on':''}" style="background:${c}"></button>`).join('');
@@ -710,7 +713,8 @@ mkSt.addEventListener('pointerup',mkEnd);mkSt.addEventListener('pointercancel',m
 mkSt.addEventListener('wheel',e=>{e.preventDefault();const r=mkSt.getBoundingClientRect(),s=Math.max(.1,Math.min(12,mk.s*Math.exp(-e.deltaY/400))),px=e.clientX-r.left,py=e.clientY-r.top;
  mk.tx=px-(px-mk.tx)*s/mk.s;mk.ty=py-(py-mk.ty)*s/mk.s;mk.s=s;mkView()},{passive:false});
 $('#mkMoreB').onclick=()=>{$('#mkMore').classList.toggle('hide');$('#mkPal').classList.add('hide')};
-$('#mkCur').onclick=()=>$('#mkMore').classList.add('hide');
+$('#mkDrawB').onclick=()=>{mk.tool='draw';$('#mkMore').classList.add('hide');mkUI()};
+$('#mkEraseB').onclick=()=>{mk.tool='erase';$('#mkMore').classList.add('hide');mkUI()};
 $('#mkMore').onclick=e=>{const b=e.target.closest('[data-t]');if(b){mk.tool=b.dataset.t;$('#mkMore').classList.add('hide');mkUI()}};
 function mkFill(x,y){const g=8,W=Math.ceil(mc.width/g),H=Math.ceil(mc.height/g),cx=Math.floor(x/g),cy=Math.floor(y/g);if(cx<0||cy<0||cx>=W||cy>=H){mk.undo.pop();return}
  const d=mx.getImageData(0,0,mc.width,mc.height).data,occ=new Uint8Array(W*H);
@@ -835,15 +839,16 @@ async function genOnce(){
  ctl=new AbortController;const seed=S.seed!==''?Math.min(+S.seed,4294967295):Math.floor(Math.random()*4294967295);
  const snap=JSON.stringify(S);spinT0=0;spin('생성 중…');
  const body=await buildPayload(seed);spin('생성 중…');
+ let orig=null;if(base){const c=cv(S.w,S.h);c.getContext('2d').drawImage(base.img,0,0,S.w,S.h);orig=await new Promise(r=>c.toBlob(r,'image/png'))}
  const blobs=await runGen(body);
- let first=null;for(let i=0;i<blobs.length;i++){const it=await addItem(blobs[i],{seed:seed+i,w:S.w,h:S.h,model:model().name+(medium()?' Medium':''),snap});first=first||it;if(S.autosave)dl(it)}
+ let first=null;for(let i=0;i<blobs.length;i++){const it=await addItem(blobs[i],{seed:seed+i,w:S.w,h:S.h,model:model().name+(medium()?' Medium':''),snap},orig);first=first||it;if(S.autosave)dl(it)}
  if(first)show(first);
 }
 async function generate(){
  if(busy){if(S.loop&&!stopReq){stopReq=true;refresh()}else ctl&&ctl.abort();return}
  if(!tok){open('#mSet');return}
  if(!BP().trim()&&!CH().some(c=>c.p.trim())){toast('프롬프트를 입력하세요',1);return}
- busy=true;stopReq=false;refresh();closePanels();
+ busy=true;stopReq=false;refresh();closePanels();if(mobile())setSheet(false);
  try{do{await genOnce();if(S.loop&&!stopReq){spin('');await sleep(1500)}}while(S.loop&&!stopReq)}
  catch(e){if(e.name!=='AbortError')toast(e.message,1)}
  finally{busy=false;stopReq=false;spin('');refresh();refreshAnlas()}
@@ -853,12 +858,13 @@ $('#gen').onclick=generate;
 /* ---------- history ---------- */
 function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('nai_studio',2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('imgs'))d.createObjectStore('imgs',{keyPath:'id',autoIncrement:true});if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 const tx=(mode,fn)=>new Promise((res,rej)=>{if(!db)return res();const t=db.transaction('imgs',mode),q=fn(t.objectStore('imgs'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)});
-async function addItem(blob,meta){const it={blob,meta,t:Date.now()};try{it.id=await tx('readwrite',s=>s.add(it))}catch{}if(it.id==null)it.id='m'+Date.now()+Math.random();it.url=URL.createObjectURL(blob);items.unshift(it);renderHist();return it}
+async function addItem(blob,meta,orig){const it={blob,meta,t:Date.now()};if(orig)it.orig=orig;try{it.id=await tx('readwrite',s=>s.add(it))}catch{}if(it.id==null)it.id='m'+Date.now()+Math.random();it.url=URL.createObjectURL(blob);items.unshift(it);renderHist();return it}
 function renderHist(){$('#hCnt').textContent=items.length?items.length+'장':'';$('#histG').innerHTML=items.slice(0,300).map(it=>`<img loading="lazy" data-id="${it.id}" src="${it.url}" class="${cur===it?'on':''}">`).join('')||'<div class="mut">아직 없음</div>'}
 $('#histG').onclick=e=>{const id=e.target.dataset.id;if(id){show(items.find(i=>String(i.id)===id));closePanels()}};
 function show(it){cur=it||null;const v=$('#view');v.classList.remove('zoom');
  if(!cur){v.innerHTML='<div id="empty">이미지가 여기에 표시됩니다</div>';$('#info').textContent=''}
- else{v.innerHTML=`<img src="${cur.url}">`;const m=cur.meta;$('#info').textContent=`${m.model||''} · ${m.w}×${m.h} · 시드 ${m.seed??'-'}`}
+ $('#bOld').classList.toggle('hide',!(cur&&cur.orig));
+ if(!cur){}else{v.innerHTML=`<img src="${cur.url}">`;const m=cur.meta;$('#info').textContent=`${m.model||''} · ${m.w}×${m.h} · 시드 ${m.seed??'-'}`}
  $$('#histG img').forEach(i=>i.classList.toggle('on',cur&&i.dataset.id===String(cur.id)));refresh()}
 function dl(it){const a=document.createElement('a');a.href=it.url;a.download=`nai_${it.meta.seed??it.t}.png`;a.click()}
 function applySnap(o){const keep={loop:S.loop,autosave:S.autosave,ac:S.ac,imp:S.imp};Object.assign(S,JSON.parse(JSON.stringify(DEF)),o,keep);if(!MODELS.some(m=>m.id===S.model))S.model=DEF.model;save();modelUI();bindAll();renderChars();refresh()}
@@ -872,7 +878,7 @@ $('#bar').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b||!cur)ret
   else if(a==='copy'){await navigator.clipboard.write([new ClipboardItem({'image/png':it.blob})]);toast('복사됨')}
   else if(a==='seed'){S.seed=String(it.meta.seed);save();bindAll();toast('시드 '+S.seed)}
   else if(a==='load'){if(it.meta.snap){const o=JSON.parse(it.meta.snap);o.seed=S.seed;applySnap(o);toast('설정 불러옴')}}
-  else if(a==='i2i'){await setBase(it.blob);pTab('R');toast('이미지→이미지 설정됨')}
+  else if(a==='i2i'){await setBase(it.blob);pTab('R');closePanels();if(mobile())setSheet(true)}
   else if(a==='inp'){await setBase(it.blob);pTab('R');mkOpen('mask')}
   else if(a==='del'){if(typeof it.id==='number')await tx('readwrite',s=>s.delete(it.id));const i=items.indexOf(it);items.splice(i,1);URL.revokeObjectURL(it.url);renderHist();show(items[i]||items[i-1])}
   else if(a==='up'){if(busy)return;if(!tok)return open('#mSet');busy=true;ctl=new AbortController;refresh();spinT0=0;spin('업스케일 중…');
@@ -926,6 +932,13 @@ addEventListener('dragover',e=>e.preventDefault());
 addEventListener('drop',e=>{e.preventDefault();dragN=0;$('#drop').style.display='none';const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(f)gotImage(f)});
 addEventListener('paste',e=>{const f=[...(e.clipboardData?e.clipboardData.files:[])].find(f=>f.type.startsWith('image/'));if(f){e.preventDefault();gotImage(f)}});
 
+/* ---------- compare with original (hold OLD) ---------- */
+let oldUrl=null;
+const oldOn=e=>{e.preventDefault();if(!cur||!cur.orig)return;const im=$('#view img');if(!im)return;if(oldUrl)URL.revokeObjectURL(oldUrl);oldUrl=URL.createObjectURL(cur.orig);im.src=oldUrl;$('#bOld').classList.add('on')};
+const oldOff=()=>{const im=$('#view img');if(im&&cur)im.src=cur.url;$('#bOld').classList.remove('on')};
+$('#bOld').addEventListener('pointerdown',oldOn);['pointerup','pointercancel','pointerleave'].forEach(t=>$('#bOld').addEventListener(t,oldOff));
+$('#bOld').addEventListener('contextmenu',e=>e.preventDefault());
+
 /* ---------- enhance ---------- */
 const ENH=Object.assign({up:1.5,mag:2,s:.5,n:0},(()=>{try{return JSON.parse(LS.nai_enh||'{}')}catch{return {}}})());
 const MAGS={1:.4,2:.5,3:.6,4:.7,5:.8};
@@ -942,7 +955,7 @@ $('#enhGo').onclick=async()=>{close('#mEnh');const it=cur;if(!it||busy)return;if
  const W=r64(it.meta.w*ENH.up),H=r64(it.meta.h*ENH.up),img=await loadImg(it.url),seed=it.meta.seed??Math.floor(Math.random()*4294967295);
  busy=true;refresh();ctl=new AbortController;spinT0=0;spin('Enhance 중…');
  try{const body=await withTemp({S:Object.assign({},snap,{w:W,h:H,n:1,strength:ENH.s,noise:ENH.n,rnd:snap.rnd||null,loop:false}),base:{img,mask:null}},()=>buildPayload(seed));
-  const bl=await runGen(body);let f=null;for(const b of bl){const n=await addItem(b,Object.assign({},it.meta,{w:W,h:H,model:(it.meta.model||'')+' · Enhance'}));f=f||n}if(f)show(f)}
+  const bl=await runGen(body);let f=null;for(const b of bl){const n=await addItem(b,Object.assign({},it.meta,{w:W,h:H,model:(it.meta.model||'')+' · Enhance'}),it.blob);f=f||n}if(f)show(f)}
  catch(e){if(e.name!=='AbortError')toast(e.message,1)}finally{busy=false;spin('');refresh();refreshAnlas()}};
 
 /* ---------- director tools ---------- */
@@ -961,7 +974,7 @@ $('#dirGo').onclick=async()=>{close('#mDir');const it=cur;if(!it||busy)return;if
  if(t==='colorize'){body.prompt=p;body.defry=d}else if(t==='emotion'){body.prompt=$('#dirE').value+';;'+p;body.defry=d}
  busy=true;refresh();ctl=new AbortController;spinT0=0;spin('디렉터 툴 실행 중…');
  try{const r=await api('/ai/augment-image',body);const bl=await unzip(new Uint8Array(await r.arrayBuffer()));const nm=$(`#dirT [data-v="${t}"]`).textContent;let f=null;
-  for(const b of bl){const n=await addItem(b,Object.assign({},it.meta,{w:W,h:H,model:'디렉터 · '+nm}));f=f||n}if(f)show(f)}
+  for(const b of bl){const n=await addItem(b,Object.assign({},it.meta,{w:W,h:H,model:'디렉터 · '+nm}),it.blob);f=f||n}if(f)show(f)}
  catch(e){if(e.name!=='AbortError')toast(e.message,1)}finally{busy=false;spin('');refresh();refreshAnlas()}};
 
 /* ---------- prompt chunks ---------- */
