@@ -1006,7 +1006,7 @@ async function dbJ(p){let r;try{r=await fetch(DBU+p,{referrerPolicy:'no-referrer
 const dbThumb=p=>{const v=((p.media_asset||{}).variants||[]).find(v=>v.type==='360x360');return v?v.url:p.preview_file_url};
 const dbN=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+'k':String(n||0);
 function dbList(){$('#dbPost').classList.add('hide');$('#dbBack').classList.add('hide');dbs.post=null}
-async function dbSearch(q,page){if(dbs.busy)return;dbs.busy=true;q=q.trim().replace(/\s+/g,' ');$('#dbAc').classList.add('hide');
+async function dbSearch(q,page){if(dbs.busy)return;dbs.busy=true;q=q.trim().replace(/\s+/g,' ');q=/^artist:/i.test(q)?q.slice(7).trim().replace(/\s+/g,'_'):q.replace(/(^|\s)artist:/gi,'$1');$('#dbAc').classList.add('hide');
  if(page===1){dbs.q=q;dbs.posts=[];dbs.done=false;$('#dbGrid').innerHTML='';$('#dbList').scrollTop=0;dbList()}
  $('#dbMsg').textContent='불러오는 중…';
  try{const L=await dbJ(`/posts.json?limit=30&page=${page}&tags=${encodeURIComponent(q)}`);dbs.page=page;if(L.length<30)dbs.done=true;
@@ -1032,10 +1032,10 @@ $('#dbBack').onclick=dbList;
 $('#dbGo').onclick=()=>{$('#dbQ').blur();dbSearch($('#dbQ').value,1)};
 $('#dbQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#dbGo').click()}};
 $('#dbExt').onclick=()=>window.open(dbs.post?`${DBU}/posts/${dbs.post.id}`:`${DBU}/posts?tags=${encodeURIComponent(dbs.q)}`,'danbooru');
-$('#dbQ').oninput=()=>{clearTimeout(dbs.acT);const w=$('#dbQ').value.split(' ').pop();if(w.length<2){$('#dbAc').classList.add('hide');return}
- dbs.acT=setTimeout(async()=>{const n=++dbs.acN;try{const L=await dbJ(`/autocomplete.json?search[query]=${encodeURIComponent(w)}&search[type]=tag_query&limit=10`);if(n!==dbs.acN)return;
+$('#dbQ').oninput=()=>{clearTimeout(dbs.acT);const v=$('#dbQ').value,last=v.split(' ').pop(),whole=/^artist:/i.test(v),art=whole||/^artist:/i.test(last),w=whole?v.slice(7).trim().replace(/\s+/g,'_'):last.replace(/^artist:/i,'');if(w.length<(art?1:2)){$('#dbAc').classList.add('hide');return}
+ dbs.acT=setTimeout(async()=>{const n=++dbs.acN;try{const L=art?(await dbJ(`/tags.json?search[name_matches]=${encodeURIComponent('*'+w+'*')}&search[category]=1&search[hide_empty]=true&search[order]=count&limit=10`)).map(t=>({value:t.name,label:t.name.replace(/_/g,' '),category:1,post_count:t.post_count})):await dbJ(`/autocomplete.json?search[query]=${encodeURIComponent(w)}&search[type]=tag_query&limit=10`);if(n!==dbs.acN)return;
   $('#dbAc').innerHTML=L.map(t=>`<button data-v="${esc(t.value)}" class="c${t.category??0}">${esc((t.antecedent?t.antecedent.replace(/_/g,' ')+' → ':'')+t.label)}<em>${dbN(t.post_count)}</em></button>`).join('');$('#dbAc').classList.toggle('hide',!L.length)}catch{}},250)};
-$('#dbAc').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;const a=$('#dbQ').value.split(' ');a[a.length-1]=b.dataset.v;const q=a.join(' ');$('#dbQ').value=q;$('#dbQ').blur();dbSearch(q,1)};
+$('#dbAc').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;const v0=$('#dbQ').value,a=/^artist:/i.test(v0)?[]:v0.split(' ');if(a.length)a[a.length-1]=b.dataset.v;else a.push(b.dataset.v);const q=a.join(' ');$('#dbQ').value=q;$('#dbQ').blur();dbSearch(q,1)};
 $('#dbBody').addEventListener('pointerdown',()=>$('#dbAc').classList.add('hide'));
 $('#dbGrid').onclick=e=>{const b=e.target.closest('[data-id]');if(b)dbShowPost(b.dataset.id)};
 $('#dbList').addEventListener('scroll',()=>{const l=$('#dbList');if(!dbs.done&&!dbs.busy&&dbs.posts.length&&l.scrollTop+l.clientHeight>l.scrollHeight-300)dbSearch(dbs.q,dbs.page+1)},{passive:true});
