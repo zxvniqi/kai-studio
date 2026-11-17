@@ -84,6 +84,13 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 #dbGrid button{padding:0;aspect-ratio:1;overflow:hidden;background:var(--p2);border-radius:4px}
 #dbGrid img{width:100%;height:100%;object-fit:cover;display:block}
 #dbMsg{text-align:center;padding:12px}
+.dbA{display:flex;align-items:center;gap:8px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.dbA>button.n{background:none;border:none;padding:0;text-align:left;flex:1;min-width:0;display:block}
+.dbA b{font-weight:600}.dbA em,.dbT em{font-style:normal;color:var(--mut);font-size:12px;margin-left:6px}
+.dbA small{display:block;color:var(--mut);font-size:12px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dbPager{display:flex;justify-content:center;gap:4px;flex-wrap:wrap;margin:12px 0 4px}
+#dbPager button{min-width:36px;height:36px;padding:0 8px;background:var(--p2)}
+#dbPager span{align-self:center;color:var(--mut);padding:0 2px}
 #dbPost{position:absolute;inset:0;overflow-y:auto;padding:8px;background:var(--bg)}
 #dbPost .im{display:block;max-width:100%;max-height:55vh;margin:0 auto;border-radius:4px}
 .dbCat{margin-top:12px}.dbCat>b{display:block;font-size:12px;color:var(--mut);margin-bottom:5px}
@@ -329,7 +336,7 @@ body.med .adv{display:none!important}
 
 <div id="dbPop" class="hide">
  <div id="dbHead"><button class="ic hide" id="dbBack" title="목록으로"></button><div id="dbQw"><input type="text" id="dbQ" placeholder="단부루 태그 검색" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"><div id="dbAc" class="hide"></div></div><button class="ic" id="dbGo" title="검색"></button><button class="ic" id="dbExt" title="단부루 사이트로 열기"></button><button class="ic" id="dbX" title="닫기"></button></div>
- <div id="dbBody"><div id="dbList"><div id="dbGrid"></div><div id="dbMsg" class="mut"></div></div><div id="dbPost" class="hide"></div></div>
+ <div id="dbBody"><div id="dbList"><div id="dbArt" class="hide"></div><div id="dbGrid"></div><div id="dbMsg" class="mut"></div><div id="dbPager"></div><div id="dbRel"></div></div><div id="dbPost" class="hide"></div></div>
 </div>
 <div class="modal" id="mSet"><div class="box">
  <h3><span>앱 설정</span><button class="ic" data-close></button></h3>
@@ -998,7 +1005,7 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
 
 /* ---------- danbooru popup ---------- */
 const DBU='https://danbooru.donmai.us';
-const dbs={q:'',page:1,posts:[],busy:false,done:false,acT:0,acN:0,post:null};
+const dbs={q:null,page:1,posts:[],busy:false,more:false,total:null,gen:0,fromArt:false,artQ:'',acT:0,acN:0,post:null};
 I.tag='<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>';I.srch='<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>';I.back='<path d="M15 18l-6-6 6-6"/>';I.ext='<path d="M14 4h6v6M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>';
 setIc('#bDb','tag');setIc('#dbGo','srch');setIc('#dbBack','back');setIc('#dbExt','ext');setIc('#dbX','x');
 async function dbJ(p){let r,last;for(let k=0;k<4;k++){if(k)await sleep(350*k);try{r=await fetch(DBU+p,{referrerPolicy:'no-referrer'});if(r.status===403&&r.headers.get('cf-mitigated')){last=r;r=null;continue}break}catch(e){r=null}}
@@ -1007,16 +1014,45 @@ async function dbJ(p){let r,last;for(let k=0;k<4;k++){if(k)await sleep(350*k);tr
 const dbThumb=p=>{const v=((p.media_asset||{}).variants||[]).find(v=>v.type==='360x360');return v?v.url:p.preview_file_url};
 function dbImgErr(i){const n=+(i.dataset.r||0);if(n>=3)return;i.dataset.r=n+1;setTimeout(()=>{const u=i.src.split('?')[0];i.src=u+'?r='+(n+1)},400*(n+1))}
 const dbN=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+'k':String(n||0);
-function dbList(){$('#dbPost').classList.add('hide');$('#dbBack').classList.add('hide');dbs.post=null}
-async function dbSearch(q,page){if(dbs.busy)return;dbs.busy=true;q=q.trim().replace(/\s+/g,' ');q=/^artist:/i.test(q)?q.slice(7).trim().replace(/\s+/g,'_'):q.replace(/(^|\s)artist:/gi,'$1');$('#dbAc').classList.add('hide');
- if(page===1){dbs.q=q;dbs.posts=[];dbs.done=false;$('#dbGrid').innerHTML='';$('#dbList').scrollTop=0;dbList()}
- $('#dbMsg').textContent='불러오는 중…';
- try{const L=await dbJ(`/posts.json?limit=30&page=${page}&tags=${encodeURIComponent(q)}`);dbs.page=page;if(L.length<30)dbs.done=true;
-  const ok=L.filter(p=>dbThumb(p));dbs.posts.push(...ok);
-  $('#dbGrid').insertAdjacentHTML('beforeend',ok.map(p=>`<button data-id="${p.id}"><img loading="lazy" onerror="dbImgErr(this)" src="${esc(dbThumb(p))}"></button>`).join(''));
-  $('#dbMsg').textContent=dbs.posts.length?'':'결과 없음'}
- catch(e){if(e.blocked)$('#dbMsg').innerHTML=`<div>${esc(e.message)}</div><button class="pri" id="dbRetry" style="margin-top:10px">${ic('load')} 다시 시도</button>`;else $('#dbMsg').textContent=e.message}finally{dbs.busy=false}}
-$('#dbMsg').addEventListener('click',e=>{if(e.target.closest('#dbRetry'))dbSearch(dbs.q,dbs.posts.length?dbs.page+1:1)});
+function dbList(){$('#dbPost').classList.add('hide');dbs.post=null;dbBackUI()}
+const dbBackUI=()=>$('#dbBack').classList.toggle('hide',!(dbs.post||dbs.fromArt));
+const DPER=30;
+function dbView(art){$('#dbArt').classList.toggle('hide',!art);['#dbGrid','#dbPager','#dbRel'].forEach(s=>$(s).classList.toggle('hide',art))}
+function dbNorm(q){q=q.trim().replace(/\s+/g,' ');return /^artist:/i.test(q)?{art:q.slice(7).trim().replace(/\s+/g,'_')}:{q:q.replace(/(^|\s)artist:/gi,'$1')}}
+async function dbSearch(raw,page){if(dbs.busy)return;const n=dbNorm(raw);if(n.art!==undefined)return dbArtists(n.art);
+ dbs.busy=true;const q=n.q;$('#dbAc').classList.add('hide');if(q!==dbs.q)dbs.total=null;
+ dbs.q=q;dbs.page=page;dbs.posts=[];$('#dbGrid').innerHTML='';$('#dbRel').innerHTML='';$('#dbPager').innerHTML='';$('#dbList').scrollTop=0;dbList();dbView(false);
+ $('#dbMsg').textContent='불러오는 중…';const my=++dbs.gen;
+ if(dbs.total==null)dbJ(`/counts/posts.json?tags=${encodeURIComponent(q)}`).then(c=>{if(dbs.q===q){dbs.total=(c.counts||{}).posts??null;dbPager()}}).catch(()=>{});
+ try{const L=await dbJ(`/posts.json?limit=${DPER}&page=${page}&tags=${encodeURIComponent(q)}`);if(my!==dbs.gen)return;dbs.more=L.length>=DPER;
+  const ok=L.filter(p=>dbThumb(p));dbs.posts=ok;
+  $('#dbGrid').innerHTML=ok.map(p=>`<button data-id="${p.id}"><img loading="lazy" onerror="dbImgErr(this)" src="${esc(dbThumb(p))}"></button>`).join('');
+  $('#dbMsg').textContent=ok.length?'':'결과 없음';dbPager();dbRel(L,q,my)}
+ catch(e){if(my!==dbs.gen)return;if(e.blocked)$('#dbMsg').innerHTML=`<div>${esc(e.message)}</div><button class="pri" id="dbRetry" style="margin-top:10px">${ic('load')} 다시 시도</button>`;else $('#dbMsg').textContent=e.message}finally{dbs.busy=false}}
+function dbPager(){const c=dbs.page,last=dbs.total!=null?Math.max(1,Math.min(1000,Math.ceil(dbs.total/DPER))):(dbs.more?c+1:c);
+ if(last<=1&&c===1){$('#dbPager').innerHTML='';return}
+ const S=new Set([1,last]);for(let i=c-2;i<=c+2;i++)if(i>=1&&i<=last)S.add(i);const P=[...S].sort((a,b)=>a-b);let h=`<button data-pg="${c-1}" ${c<=1?'disabled':''}>‹</button>`,prev=0;
+ for(const p of P){if(p-prev>1)h+='<span>…</span>';h+=`<button data-pg="${p}" class="${p===c?'on':''}">${p}</button>`;prev=p}
+ h+=`<button data-pg="${c+1}" ${c>=last?'disabled':''}>›</button>`;$('#dbPager').innerHTML=h}
+async function dbRel(L,q,my){const f=new Map(),qs=q.split(' ').filter(t=>t&&!t.includes(':')&&!t.startsWith('-'));
+ L.forEach(p=>(p.tag_string||'').split(' ').forEach(t=>t&&f.set(t,(f.get(t)||0)+1)));
+ const top=[...new Set([...qs,...[...f.entries()].sort((a,b)=>b[1]-a[1]).slice(0,25).map(e=>e[0])])].slice(0,28);if(!top.length)return;
+ let T=[];try{T=await dbJ(`/tags.json?search[name_comma]=${encodeURIComponent(top.join(','))}&only=name,post_count,category&limit=50`)}catch{return}if(my!==dbs.gen)return;
+ const O={3:0,4:1,1:2,0:3,5:4},M=new Map(T.map(t=>[t.name,t]));
+ const R=top.filter(t=>M.has(t)).sort((a,b)=>(qs.includes(b)-qs.includes(a))||(O[M.get(a).category]-O[M.get(b).category])||((f.get(b)||0)-(f.get(a)||0)));
+ const have=new Set(BP().split(',').map(s=>s.trim().toLowerCase()));
+ $('#dbRel').innerHTML=`<div class="dbCat"><b>태그</b><div class="dbTags">${R.map(t=>{const x=M.get(t),v=dbTagTxt(t,x.category);return `<span class="dbT c${x.category}${have.has(v.toLowerCase())?' on':''}"><button data-s="${esc(t)}">${esc(t.replace(/_/g,' '))}<em>${dbN(x.post_count)}</em></button><button data-add="${esc(v)}" title="프롬프트에 넣기">+</button></span>`}).join('')}</div></div>`}
+async function dbArtists(name){if(dbs.busy)return;dbs.busy=true;const my=++dbs.gen;dbs.fromArt=false;dbs.post=null;$('#dbPost').classList.add('hide');dbBackUI();
+ dbView(true);$('#dbArt').innerHTML='';$('#dbList').scrollTop=0;$('#dbMsg').textContent='불러오는 중…';$('#dbAc').classList.add('hide');
+ try{const L=await dbJ(`/artists.json?search[any_name_matches]=${encodeURIComponent('*'+name+'*')}&search[is_deleted]=false&search[order]=post_count&limit=50&only=id,name,other_names,tag[post_count]`);if(my!==dbs.gen)return;
+  $('#dbArt').innerHTML=L.map(a=>`<div class="dbA"><button class="n" data-art="${esc(a.name)}"><b class="c1">${esc(a.name)}</b><em>${dbN((a.tag||{}).post_count||0)}</em>${(a.other_names||[]).length?`<small>${esc(a.other_names.join(' · '))}</small>`:''}</button><button class="ic" data-add="${esc(dbTagTxt(a.name,1))}" title="프롬프트에 넣기">${ic('plus')}</button></div>`).join('');
+  $('#dbMsg').textContent=L.length?'':'결과 없음'}
+ catch(e){if(my!==dbs.gen)return;if(e.blocked)$('#dbMsg').innerHTML=`<div>${esc(e.message)}</div><button class="pri" id="dbRetry" style="margin-top:10px">${ic('load')} 다시 시도</button>`;else $('#dbMsg').textContent=e.message}finally{dbs.busy=false}}
+$('#dbMsg').addEventListener('click',e=>{if(e.target.closest('#dbRetry'))dbSearch($('#dbQ').value,dbs.page||1)});
+$('#dbPager').onclick=e=>{const b=e.target.closest('[data-pg]');if(b&&!b.disabled)dbSearch(dbs.q,+b.dataset.pg)};
+$('#dbArt').onclick=e=>{const a=e.target.closest('[data-add]'),n=e.target.closest('[data-art]');
+ if(a){dbAdd([a.dataset.add]);return}if(n){dbs.artHtml=null;dbs.fromArt=true;dbs.artQ=$('#dbQ').value;$('#dbQ').value=n.dataset.art;dbSearch(n.dataset.art,1).then(dbBackUI)}};
+$('#dbRel').onclick=e=>{const a=e.target.closest('[data-add]'),s=e.target.closest('[data-s]');if(a)dbAdd([a.dataset.add]);else if(s){dbs.fromArt=false;$('#dbQ').value=s.dataset.s;dbSearch(s.dataset.s,1)}};
 const dbTagTxt=(t,cat)=>(cat===1?'artist:':'')+t.replace(/_/g,' ');
 function dbShowPost(id){const p=dbs.posts.find(x=>x.id==id);if(!p)return;dbs.post=p;
  const big=/^(jpe?g|png|webp|gif)$/.test(p.file_ext||'')?(p.large_file_url||p.file_url||dbThumb(p)):dbThumb(p);
@@ -1027,24 +1063,23 @@ function dbShowPost(id){const p=dbs.posts.find(x=>x.id==id);if(!p)return;dbs.pos
  $('#dbPost').classList.remove('hide');$('#dbPost').scrollTop=0;$('#dbBack').classList.remove('hide')}
 function dbAdd(tags){const c=BP().replace(/[\s,]+$/,''),have=new Set(c.split(',').map(s=>s.trim().toLowerCase())),add=tags.filter(t=>!have.has(t.toLowerCase()));
  if(!add.length){toast('이미 들어 있음');return}const nv=(c?c+', ':'')+add.join(', ');if(rBase())S.rnd.base=nv;else S.prompt=nv;save();bindAll();refresh();
- toast('+ '+(add.length>1?add.length+'개':add[0]));add.forEach(t=>$$('#dbPost [data-add]').forEach(b=>{if(b.dataset.add===t)b.parentNode.classList.add('on')}))}
+ toast('+ '+(add.length>1?add.length+'개':add[0]));add.forEach(t=>$$('#dbPop [data-add]').forEach(b=>{if(b.dataset.add===t)b.parentNode.classList.add('on')}))}
 const dbPostTags=()=>{const p=dbs.post;return p?[[4,p.tag_string_character],[3,p.tag_string_copyright],[0,p.tag_string_general]].flatMap(([k,s])=>(s||'').trim().split(/\s+/).filter(Boolean).map(t=>dbTagTxt(t,k))):[]};
 $('#bDb').onclick=()=>{$('#dbPop').classList.remove('hide');if(!dbs.posts.length&&!dbs.busy)dbSearch($('#dbQ').value,1)};
 $('#dbX').onclick=()=>{$('#dbPop').classList.add('hide');$('#dbAc').classList.add('hide')};
-$('#dbBack').onclick=dbList;
-$('#dbGo').onclick=()=>{$('#dbQ').blur();dbSearch($('#dbQ').value,1)};
+$('#dbBack').onclick=()=>{if(dbs.post)return dbList();if(dbs.fromArt){dbs.fromArt=false;dbs.gen++;dbs.busy=false;$('#dbQ').value=dbs.artQ;dbView(true);$('#dbMsg').textContent='';$('#dbList').scrollTop=0;dbBackUI()}};
+$('#dbGo').onclick=()=>{$('#dbQ').blur();dbs.fromArt=false;dbSearch($('#dbQ').value,1)};
 $('#dbQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#dbGo').click()}};
 $('#dbExt').onclick=()=>window.open(dbs.post?`${DBU}/posts/${dbs.post.id}`:`${DBU}/posts?tags=${encodeURIComponent(dbs.q)}`,'danbooru');
 
 $('#dbQ').oninput=()=>{clearTimeout(dbs.acT);const v=$('#dbQ').value,last=v.split(' ').pop(),whole=/^artist:/i.test(v),art=whole||/^artist:/i.test(last),w=whole?v.slice(7).trim().replace(/\s+/g,'_'):last.replace(/^artist:/i,'');if(w.length<(art?1:2)){$('#dbAc').classList.add('hide');return}
  dbs.acT=setTimeout(async()=>{const n=++dbs.acN;try{const L=art?(await dbJ(`/tags.json?search[name_matches]=${encodeURIComponent('*'+w+'*')}&search[category]=1&search[hide_empty]=true&search[order]=count&limit=10`)).map(t=>({value:t.name,label:t.name.replace(/_/g,' '),category:1,post_count:t.post_count})):await dbJ(`/autocomplete.json?search[query]=${encodeURIComponent(w)}&search[type]=tag_query&limit=10`);if(n!==dbs.acN)return;
   $('#dbAc').innerHTML=L.map(t=>`<button data-v="${esc(t.value)}" class="c${t.category??0}">${esc((t.antecedent?t.antecedent.replace(/_/g,' ')+' → ':'')+t.label)}<em>${dbN(t.post_count)}</em></button>`).join('');$('#dbAc').classList.toggle('hide',!L.length)}catch{}},250)};
-$('#dbAc').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;const v0=$('#dbQ').value,a=/^artist:/i.test(v0)?[]:v0.split(' ');if(a.length)a[a.length-1]=b.dataset.v;else a.push(b.dataset.v);const q=a.join(' ');$('#dbQ').value=q;$('#dbQ').blur();dbSearch(q,1)};
+$('#dbAc').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;const v0=$('#dbQ').value,a=/^artist:/i.test(v0)?[]:v0.split(' ');if(a.length)a[a.length-1]=b.dataset.v;else a.push(b.dataset.v);const q=a.join(' ');$('#dbQ').value=q;$('#dbQ').blur();dbs.fromArt=false;dbSearch(q,1)};
 $('#dbBody').addEventListener('pointerdown',()=>$('#dbAc').classList.add('hide'));
 $('#dbGrid').onclick=e=>{const b=e.target.closest('[data-id]');if(b)dbShowPost(b.dataset.id)};
-$('#dbList').addEventListener('scroll',()=>{const l=$('#dbList');if(!dbs.done&&!dbs.busy&&dbs.posts.length&&l.scrollTop+l.clientHeight>l.scrollHeight-300)dbSearch(dbs.q,dbs.page+1)},{passive:true});
 $('#dbPost').onclick=e=>{const a=e.target.closest('[data-add]'),s=e.target.closest('[data-s]');
- if(a)dbAdd([a.dataset.add]);else if(s){$('#dbQ').value=s.dataset.s;dbSearch(s.dataset.s,1)}
+ if(a)dbAdd([a.dataset.add]);else if(s){dbs.fromArt=false;$('#dbQ').value=s.dataset.s;dbSearch(s.dataset.s,1)}
  else if(e.target.closest('#dbAddAll'))dbAdd(dbPostTags());
  else if(e.target.closest('#dbCopy')){navigator.clipboard.writeText(dbPostTags().join(', ')).then(()=>toast('태그 복사됨'),()=>toast('복사 실패',1))}};
 
