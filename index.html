@@ -1001,10 +1001,11 @@ const DBU='https://danbooru.donmai.us';
 const dbs={q:'',page:1,posts:[],busy:false,done:false,acT:0,acN:0,post:null};
 I.tag='<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>';I.srch='<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>';I.back='<path d="M15 18l-6-6 6-6"/>';I.ext='<path d="M14 4h6v6M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>';
 setIc('#bDb','tag');setIc('#dbGo','srch');setIc('#dbBack','back');setIc('#dbExt','ext');setIc('#dbX','x');
-async function dbJ(p){let r;try{r=await fetch(DBU+p,{referrerPolicy:'no-referrer'})}catch{const e=new Error('앱 안에서는 단부루 연결이 막혀 있습니다');e.blocked=true;throw e}
- if(r.status===403&&r.headers.get('cf-mitigated')){const e=new Error('앱 안에서는 단부루 연결이 막혀 있습니다');e.blocked=true;throw e}
+async function dbJ(p){let r,last;for(let k=0;k<4;k++){if(k)await sleep(350*k);try{r=await fetch(DBU+p,{referrerPolicy:'no-referrer'});if(r.status===403&&r.headers.get('cf-mitigated')){last=r;r=null;continue}break}catch(e){r=null}}
+ if(!r){const e=new Error('단부루 연결 실패');e.blocked=true;throw e}
  if(!r.ok){let m='';try{m=(await r.json()).message}catch{}throw new Error(m||'단부루 오류 '+r.status)}return r.json()}
 const dbThumb=p=>{const v=((p.media_asset||{}).variants||[]).find(v=>v.type==='360x360');return v?v.url:p.preview_file_url};
+function dbImgErr(i){const n=+(i.dataset.r||0);if(n>=3)return;i.dataset.r=n+1;setTimeout(()=>{const u=i.src.split('?')[0];i.src=u+'?r='+(n+1)},400*(n+1))}
 const dbN=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+'k':String(n||0);
 function dbList(){$('#dbPost').classList.add('hide');$('#dbBack').classList.add('hide');dbs.post=null}
 async function dbSearch(q,page){if(dbs.busy)return;dbs.busy=true;q=q.trim().replace(/\s+/g,' ');q=/^artist:/i.test(q)?q.slice(7).trim().replace(/\s+/g,'_'):q.replace(/(^|\s)artist:/gi,'$1');$('#dbAc').classList.add('hide');
@@ -1012,25 +1013,23 @@ async function dbSearch(q,page){if(dbs.busy)return;dbs.busy=true;q=q.trim().repl
  $('#dbMsg').textContent='불러오는 중…';
  try{const L=await dbJ(`/posts.json?limit=30&page=${page}&tags=${encodeURIComponent(q)}`);dbs.page=page;if(L.length<30)dbs.done=true;
   const ok=L.filter(p=>dbThumb(p));dbs.posts.push(...ok);
-  $('#dbGrid').insertAdjacentHTML('beforeend',ok.map(p=>`<button data-id="${p.id}"><img loading="lazy" referrerpolicy="no-referrer" src="${esc(dbThumb(p))}"></button>`).join(''));
+  $('#dbGrid').insertAdjacentHTML('beforeend',ok.map(p=>`<button data-id="${p.id}"><img loading="lazy" onerror="dbImgErr(this)" src="${esc(dbThumb(p))}"></button>`).join(''));
   $('#dbMsg').textContent=dbs.posts.length?'':'결과 없음'}
- catch(e){if(e.blocked){try{LS.nai_dbtab='1'}catch{}$('#dbMsg').innerHTML=`<div>${esc(e.message)}</div><button class="pri" id="dbOpenTab" style="margin-top:10px">${ic('ext')} 단부루 탭으로 열기</button>`}else $('#dbMsg').textContent=e.message}finally{dbs.busy=false}}
-function dbTab(url){url=url||DBU+'/posts';let w=null;try{w=window.open('','danbooru')}catch{}if(!w){window.open(url,'_blank');return}
- let blank=false;try{blank=!w.location.href||w.location.href==='about:blank'}catch{}if(blank)w.location.href=url;try{w.focus()}catch{}}
-$('#dbMsg').addEventListener('click',e=>{if(e.target.closest('#dbOpenTab')){$('#dbPop').classList.add('hide');dbTab(dbs.q?`${DBU}/posts?tags=${encodeURIComponent(dbs.q)}`:'')}});
+ catch(e){if(e.blocked)$('#dbMsg').innerHTML=`<div>${esc(e.message)}</div><button class="pri" id="dbRetry" style="margin-top:10px">${ic('load')} 다시 시도</button>`;else $('#dbMsg').textContent=e.message}finally{dbs.busy=false}}
+$('#dbMsg').addEventListener('click',e=>{if(e.target.closest('#dbRetry'))dbSearch(dbs.q,dbs.posts.length?dbs.page+1:1)});
 const dbTagTxt=(t,cat)=>(cat===1?'artist:':'')+t.replace(/_/g,' ');
 function dbShowPost(id){const p=dbs.posts.find(x=>x.id==id);if(!p)return;dbs.post=p;
  const big=/^(jpe?g|png|webp|gif)$/.test(p.file_ext||'')?(p.large_file_url||p.file_url||dbThumb(p)):dbThumb(p);
  const cats=[[4,'캐릭터',p.tag_string_character],[3,'작품',p.tag_string_copyright],[1,'작가',p.tag_string_artist],[0,'일반',p.tag_string_general]];
  const have=new Set(BP().split(',').map(s=>s.trim().toLowerCase()));
- $('#dbPost').innerHTML=`<img class="im" referrerpolicy="no-referrer" src="${esc(big)}"><div class="row" style="margin-top:8px"><span class="mut">#${p.id}</span><span class="sp"></span><button class="ic" id="dbCopy" title="태그 전체 복사">${ic('copy')}</button><button class="ic" id="dbAddAll" title="태그 전체 프롬프트에 넣기">${ic('plus')}</button></div>`+
+ $('#dbPost').innerHTML=`<img class="im" onerror="dbImgErr(this)" src="${esc(big)}"><div class="row" style="margin-top:8px"><span class="mut">#${p.id}</span><span class="sp"></span><button class="ic" id="dbCopy" title="태그 전체 복사">${ic('copy')}</button><button class="ic" id="dbAddAll" title="태그 전체 프롬프트에 넣기">${ic('plus')}</button></div>`+
   cats.filter(c=>(c[2]||'').trim()).map(([k,n,s])=>`<div class="dbCat"><b>${n}</b><div class="dbTags">${s.trim().split(/\s+/).map(t=>{const v=dbTagTxt(t,k);return `<span class="dbT c${k}${have.has(v.toLowerCase())?' on':''}"><button data-s="${esc(t)}">${esc(t.replace(/_/g,' '))}</button><button data-add="${esc(v)}" title="프롬프트에 넣기">+</button></span>`}).join('')}</div></div>`).join('');
  $('#dbPost').classList.remove('hide');$('#dbPost').scrollTop=0;$('#dbBack').classList.remove('hide')}
 function dbAdd(tags){const c=BP().replace(/[\s,]+$/,''),have=new Set(c.split(',').map(s=>s.trim().toLowerCase())),add=tags.filter(t=>!have.has(t.toLowerCase()));
  if(!add.length){toast('이미 들어 있음');return}const nv=(c?c+', ':'')+add.join(', ');if(rBase())S.rnd.base=nv;else S.prompt=nv;save();bindAll();refresh();
  toast('+ '+(add.length>1?add.length+'개':add[0]));add.forEach(t=>$$('#dbPost [data-add]').forEach(b=>{if(b.dataset.add===t)b.parentNode.classList.add('on')}))}
 const dbPostTags=()=>{const p=dbs.post;return p?[[4,p.tag_string_character],[3,p.tag_string_copyright],[0,p.tag_string_general]].flatMap(([k,s])=>(s||'').trim().split(/\s+/).filter(Boolean).map(t=>dbTagTxt(t,k))):[]};
-$('#bDb').onclick=()=>{if(LS.nai_dbtab==='1')return dbTab();$('#dbPop').classList.remove('hide');if(!dbs.posts.length&&!dbs.busy)dbSearch($('#dbQ').value,1)};
+$('#bDb').onclick=()=>{$('#dbPop').classList.remove('hide');if(!dbs.posts.length&&!dbs.busy)dbSearch($('#dbQ').value,1)};
 $('#dbX').onclick=()=>{$('#dbPop').classList.add('hide');$('#dbAc').classList.add('hide')};
 $('#dbBack').onclick=dbList;
 $('#dbGo').onclick=()=>{$('#dbQ').blur();dbSearch($('#dbQ').value,1)};
