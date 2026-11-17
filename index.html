@@ -1113,7 +1113,7 @@ function dbTagMenu(btn,n,c){dbs.mt={n,c:+c};const it=BMget().i.find(x=>x.n===n);
  let h=MI('add','프롬프트에 추가','plus')+MI('copy','복사','copy');
  h+=it?(dbs.tab==='b'?MI('move','폴더 이동','folder'):'')+MI('unbm','북마크 해제','trash'):MI('bm','북마크','star');dbMenuShow(btn,h)}
 function dbFolderPick(){const B=BMget(),it=B.i.find(x=>x.n===(dbs.mt||{}).n);dbMenuShow(dbs.mAnchor,B.f.map(f=>MI('f',f,'folder',` data-f="${esc(f)}"${it&&it.f===f?' class="on"':''}`)).join('')+MI('newf','새 폴더','plus'))}
-function dbAsk(ph,val,cb){dbs.askCb=cb;dbMenuShow(dbs.mAnchor,`<div class="mrow"><input type="text" id="dbFn" placeholder="${esc(ph)}" value="${esc(val||'')}" autocomplete="off"><button class="ic pri" data-mc="ok">${ic('check')}</button></div>`);setTimeout(()=>{const i=$('#dbFn');if(i){i.focus();i.select()}},30)}
+function dbAsk(ph,val,cb){dbs.askCb=cb;dbMenuShow(dbs.mAnchor,`<div class="mrow"><input type="text" id="dbFn" placeholder="${esc(ph)}" value="${esc(val||'')}" autocomplete="off"><button class="ic pri" data-mc="ok">${ic('check')}</button></div>`);const m=$("#dbMenu"),hb=$("#dbHead").getBoundingClientRect();m.style.top=(hb.bottom+8)+"px";m.style.left=Math.max(8,(innerWidth-m.offsetWidth)/2)+"px";const i=$("#dbFn");if(i){try{i.focus({preventScroll:true})}catch{i.focus()}i.select()}}
 function dbBmPut(B,t,f){const it=B.i.find(x=>x.n===t.n);if(it)it.f=f;else B.i.push({n:t.n,c:t.c,f});BMset(B);toast('★ '+f)}
 $('#dbMenu').onclick=e=>{const b=e.target.closest('[data-mc]');if(!b)return;const c=b.dataset.mc,t=dbs.mt||{},B=BMget();
  if(c==='add'){dbAdd([dbTagTxt(t.n,t.c)]);dbMenuHide()}
@@ -1127,7 +1127,7 @@ $('#dbMenu').onclick=e=>{const b=e.target.closest('[data-mc]');if(!b)return;cons
  else if(c==='fdel'){const o=dbs.bf;if(B.f.length<2)return;B.f=B.f.filter(x=>x!==o);const to=B.f[0];let k=0;B.i.forEach(i=>{if(i.f===o){i.f=to;k++}});dbs.bf='*';BMset(B);dbMenuHide();toast(k?`폴더 삭제 · ${k}개 → ${to}`:'폴더 삭제')}};
 $('#dbMenu').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='dbFn'){e.preventDefault();$('#dbMenu [data-mc="ok"]').click()}});
 document.addEventListener('pointerdown',e=>{if(!$('#dbMenu').classList.contains('hide')&&!e.target.closest('#dbMenu,[data-m],[data-mc2]'))dbMenuHide()},true);
-$('#dbList').addEventListener('scroll',dbMenuHide,{passive:true});$('#dbPost').addEventListener('scroll',dbMenuHide,{passive:true});
+const dbMenuScroll=()=>{if(!$('#dbFn'))dbMenuHide()};$('#dbList').addEventListener('scroll',dbMenuScroll,{passive:true});$('#dbPost').addEventListener('scroll',dbMenuScroll,{passive:true});document.body.append($('#dbMenu'));
 $('#dbPop').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(b){e.stopPropagation();dbTagMenu(b,b.dataset.m,b.dataset.c)}},true);
 function dbBmRender(){const B=BMget();if(dbs.bf!=='*'&&!B.f.includes(dbs.bf))dbs.bf='*';const flt=$('#dbQ').value.trim().toLowerCase().replace(/\s+/g,'_').replace(/^artist:/,'');
  const cnt=x=>B.i.filter(i=>x==='*'||i.f===x).length,O={3:0,4:1,1:2,0:3,5:4};
