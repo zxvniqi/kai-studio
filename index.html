@@ -1001,7 +1001,8 @@ const DBU='https://danbooru.donmai.us';
 const dbs={q:'',page:1,posts:[],busy:false,done:false,acT:0,acN:0,post:null};
 I.tag='<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>';I.srch='<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>';I.back='<path d="M15 18l-6-6 6-6"/>';I.ext='<path d="M14 4h6v6M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>';
 setIc('#bDb','tag');setIc('#dbGo','srch');setIc('#dbBack','back');setIc('#dbExt','ext');setIc('#dbX','x');
-async function dbJ(p){let r;try{r=await fetch(DBU+p,{referrerPolicy:'no-referrer'})}catch{throw new Error('단부루에 연결할 수 없습니다')}
+async function dbJ(p){let r;try{r=await fetch(DBU+p,{referrerPolicy:'no-referrer'})}catch{const e=new Error('앱 안에서는 단부루 연결이 막혀 있습니다');e.blocked=true;throw e}
+ if(r.status===403&&r.headers.get('cf-mitigated')){const e=new Error('앱 안에서는 단부루 연결이 막혀 있습니다');e.blocked=true;throw e}
  if(!r.ok){let m='';try{m=(await r.json()).message}catch{}throw new Error(m||'단부루 오류 '+r.status)}return r.json()}
 const dbThumb=p=>{const v=((p.media_asset||{}).variants||[]).find(v=>v.type==='360x360');return v?v.url:p.preview_file_url};
 const dbN=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+'k':String(n||0);
@@ -1013,7 +1014,10 @@ async function dbSearch(q,page){if(dbs.busy)return;dbs.busy=true;q=q.trim().repl
   const ok=L.filter(p=>dbThumb(p));dbs.posts.push(...ok);
   $('#dbGrid').insertAdjacentHTML('beforeend',ok.map(p=>`<button data-id="${p.id}"><img loading="lazy" referrerpolicy="no-referrer" src="${esc(dbThumb(p))}"></button>`).join(''));
   $('#dbMsg').textContent=dbs.posts.length?'':'결과 없음'}
- catch(e){$('#dbMsg').textContent=e.message}finally{dbs.busy=false}}
+ catch(e){if(e.blocked){try{LS.nai_dbtab='1'}catch{}$('#dbMsg').innerHTML=`<div>${esc(e.message)}</div><button class="pri" id="dbOpenTab" style="margin-top:10px">${ic('ext')} 단부루 탭으로 열기</button>`}else $('#dbMsg').textContent=e.message}finally{dbs.busy=false}}
+function dbTab(url){url=url||DBU+'/posts';let w=null;try{w=window.open('','danbooru')}catch{}if(!w){window.open(url,'_blank');return}
+ let blank=false;try{blank=!w.location.href||w.location.href==='about:blank'}catch{}if(blank)w.location.href=url;try{w.focus()}catch{}}
+$('#dbMsg').addEventListener('click',e=>{if(e.target.closest('#dbOpenTab')){$('#dbPop').classList.add('hide');dbTab(dbs.q?`${DBU}/posts?tags=${encodeURIComponent(dbs.q)}`:'')}});
 const dbTagTxt=(t,cat)=>(cat===1?'artist:':'')+t.replace(/_/g,' ');
 function dbShowPost(id){const p=dbs.posts.find(x=>x.id==id);if(!p)return;dbs.post=p;
  const big=/^(jpe?g|png|webp|gif)$/.test(p.file_ext||'')?(p.large_file_url||p.file_url||dbThumb(p)):dbThumb(p);
@@ -1026,12 +1030,13 @@ function dbAdd(tags){const c=BP().replace(/[\s,]+$/,''),have=new Set(c.split(','
  if(!add.length){toast('이미 들어 있음');return}const nv=(c?c+', ':'')+add.join(', ');if(rBase())S.rnd.base=nv;else S.prompt=nv;save();bindAll();refresh();
  toast('+ '+(add.length>1?add.length+'개':add[0]));add.forEach(t=>$$('#dbPost [data-add]').forEach(b=>{if(b.dataset.add===t)b.parentNode.classList.add('on')}))}
 const dbPostTags=()=>{const p=dbs.post;return p?[[4,p.tag_string_character],[3,p.tag_string_copyright],[0,p.tag_string_general]].flatMap(([k,s])=>(s||'').trim().split(/\s+/).filter(Boolean).map(t=>dbTagTxt(t,k))):[]};
-$('#bDb').onclick=()=>{$('#dbPop').classList.remove('hide');if(!dbs.posts.length&&!dbs.busy)dbSearch($('#dbQ').value,1)};
+$('#bDb').onclick=()=>{if(LS.nai_dbtab==='1')return dbTab();$('#dbPop').classList.remove('hide');if(!dbs.posts.length&&!dbs.busy)dbSearch($('#dbQ').value,1)};
 $('#dbX').onclick=()=>{$('#dbPop').classList.add('hide');$('#dbAc').classList.add('hide')};
 $('#dbBack').onclick=dbList;
 $('#dbGo').onclick=()=>{$('#dbQ').blur();dbSearch($('#dbQ').value,1)};
 $('#dbQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#dbGo').click()}};
 $('#dbExt').onclick=()=>window.open(dbs.post?`${DBU}/posts/${dbs.post.id}`:`${DBU}/posts?tags=${encodeURIComponent(dbs.q)}`,'danbooru');
+
 $('#dbQ').oninput=()=>{clearTimeout(dbs.acT);const v=$('#dbQ').value,last=v.split(' ').pop(),whole=/^artist:/i.test(v),art=whole||/^artist:/i.test(last),w=whole?v.slice(7).trim().replace(/\s+/g,'_'):last.replace(/^artist:/i,'');if(w.length<(art?1:2)){$('#dbAc').classList.add('hide');return}
  dbs.acT=setTimeout(async()=>{const n=++dbs.acN;try{const L=art?(await dbJ(`/tags.json?search[name_matches]=${encodeURIComponent('*'+w+'*')}&search[category]=1&search[hide_empty]=true&search[order]=count&limit=10`)).map(t=>({value:t.name,label:t.name.replace(/_/g,' '),category:1,post_count:t.post_count})):await dbJ(`/autocomplete.json?search[query]=${encodeURIComponent(w)}&search[type]=tag_query&limit=10`);if(n!==dbs.acN)return;
   $('#dbAc').innerHTML=L.map(t=>`<button data-v="${esc(t.value)}" class="c${t.category??0}">${esc((t.antecedent?t.antecedent.replace(/_/g,' ')+' → ':'')+t.label)}<em>${dbN(t.post_count)}</em></button>`).join('');$('#dbAc').classList.toggle('hide',!L.length)}catch{}},250)};
