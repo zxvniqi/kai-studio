@@ -356,6 +356,13 @@ body.med .adv{display:none!important}
  <div class="row" style="margin-top:14px"><label class="row"><input type="checkbox" data-k="autosave"> 생성 즉시 자동 저장</label></div>
  <div class="row"><label class="row"><input type="checkbox" data-k="ac"> 태그 자동완성</label></div>
  <div class="row"><button id="bClr">기록 전체 삭제</button></div>
+ <div class="row" style="margin-top:14px"><button class="grow" id="bExp"></button><button class="grow" id="bImp"></button><input type="file" id="fImp" accept=".json,application/json" class="hide"></div>
+ <div class="mut" style="margin-top:4px">북마크·프리셋·청크·설정을 파일 하나로 백업합니다. 토큰은 포함되지 않습니다.</div>
+</div></div>
+<div class="modal" id="mImp"><div class="box">
+ <h3><span>불러오기</span><button class="ic" data-close></button></h3>
+ <div class="mut" id="impInfo"></div>
+ <div class="row" style="margin-top:14px"><button class="grow" id="impMerge">합치기</button><button class="grow pri" id="impOver">덮어쓰기</button></div>
 </div></div>
 
 <div class="modal" id="mPre"><div class="box">
@@ -1140,6 +1147,26 @@ $('#dbBm').onclick=e=>{const f=e.target.closest('[data-bf]'),m=e.target.closest(
  else if(m){dbs.mAnchor=m;if(m.dataset.mc2==='fnew')dbAsk('새 폴더 이름','',v=>{const B=BMget();if(!B.f.includes(v))B.f.push(v);dbs.bf=v;BMset(B)});
   else dbMenuShow(m,MI('fren','이름 변경','edit')+(BMget().f.length>1?MI('fdel','폴더 삭제','trash'):''))}
  else if(s){dbs.in.b=$('#dbQ').value;dbs.gen++;dbs.busy=false;dbMode('p');$('#dbQ').value=s.dataset.s;dbs.fromArt='b';dbSearch(s.dataset.s,1)}};
+
+/* ---------- backup file: export / import ---------- */
+const BK_KEYS=['nai_dbbm','nai_presets','nai_chunks','nai_state','nai_enh','nai_mk','nai_sheet'];let bkImp=null;
+$('#bExp').innerHTML=ic('save')+' 파일로 저장';$('#bImp').innerHTML=ic('upl')+' 파일 불러오기';
+const bkJ=(s,d)=>{try{const v=JSON.parse(s);return v??d}catch{return d}};
+$('#bExp').onclick=()=>{const data={};BK_KEYS.forEach(k=>{if(LS[k]!=null)data[k]=LS[k]});const d=new Date(),p=n=>String(n).padStart(2,'0');
+ const b=new Blob([JSON.stringify({app:'nai-studio',v:1,at:d.toISOString(),data},null,1)],{type:'application/json'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(b);a.download=`nai-studio-backup-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('백업 파일 저장')};
+$('#bImp').onclick=()=>$('#fImp').click();
+$('#fImp').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;let j=null;try{j=JSON.parse(await f.text())}catch{}
+ if(!j||j.app!=='nai-studio'||!j.data||typeof j.data!=='object')return toast('NAI Studio 백업 파일이 아닙니다',1);
+ bkImp=j;const D=j.data,bm=bkJ(D.nai_dbbm,{}),n=[['북마크',(bm.i||[]).length],['폴더',(bm.f||[]).length],['프리셋',Object.keys(bkJ(D.nai_presets,{})).length],['청크',bkJ(D.nai_chunks,[]).length]];
+ $('#impInfo').textContent=n.map(x=>x[0]+' '+x[1]).join(' · ')+(D.nai_state?' · 설정':'');close('#mSet');open('#mImp')};
+function bkDone(m){close('#mImp');bkImp=null;toast(m);setTimeout(()=>location.reload(),700)}
+$('#impOver').onclick=()=>{if(!bkImp)return;const D=bkImp.data;BK_KEYS.forEach(k=>{if(typeof D[k]==='string')LS[k]=D[k];else{try{delete LS[k]}catch{}}});bkDone('덮어쓰기 완료')};
+$('#impMerge').onclick=()=>{if(!bkImp)return;const D=bkImp.data;
+ const B=BMget(),ib=bkJ(D.nai_dbbm,null);if(ib&&Array.isArray(ib.f)&&Array.isArray(ib.i)){ib.f.forEach(f=>{if(!B.f.includes(f))B.f.push(f)});ib.i.forEach(i=>{if(i&&i.n&&!B.i.some(x=>x.n===i.n)){if(!i.f)i.f=B.f[0];if(!B.f.includes(i.f))B.f.push(i.f);B.i.push(i)}});LS.nai_dbbm=JSON.stringify(B)}
+ const P=presets(),ip=bkJ(D.nai_presets,{});Object.keys(ip).forEach(k=>{if(!(k in P))P[k]=ip[k]});LS.nai_presets=JSON.stringify(P);
+ const C=chunks(),ic2=bkJ(D.nai_chunks,[]);if(Array.isArray(ic2))ic2.forEach(c=>{if(c&&c.t&&!C.some(x=>x.t===c.t))C.push(c)});LS.nai_chunks=JSON.stringify(C);
+ bkDone('합치기 완료')};
 
 /* ---------- compare with original (hold OLD) ---------- */
 let oldUrl=null;
