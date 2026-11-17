@@ -1002,7 +1002,7 @@ const dbs={q:'',page:1,posts:[],busy:false,done:false,acT:0,acN:0,post:null};
 I.tag='<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>';I.srch='<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>';I.back='<path d="M15 18l-6-6 6-6"/>';I.ext='<path d="M14 4h6v6M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>';
 setIc('#bDb','tag');setIc('#dbGo','srch');setIc('#dbBack','back');setIc('#dbExt','ext');setIc('#dbX','x');
 async function dbJ(p){let r,last;for(let k=0;k<4;k++){if(k)await sleep(350*k);try{r=await fetch(DBU+p,{referrerPolicy:'no-referrer'});if(r.status===403&&r.headers.get('cf-mitigated')){last=r;r=null;continue}break}catch(e){r=null}}
- if(!r){const e=new Error('단부루 연결 실패');e.blocked=true;throw e}
+ if(!r){let why='B';try{await fetch(DBU+'/robots.txt?'+Date.now(),{mode:'no-cors',cache:'no-store'});why='A'}catch{}const e=new Error('단부루 연결 실패 ('+why+')');e.blocked=true;throw e}
  if(!r.ok){let m='';try{m=(await r.json()).message}catch{}throw new Error(m||'단부루 오류 '+r.status)}return r.json()}
 const dbThumb=p=>{const v=((p.media_asset||{}).variants||[]).find(v=>v.type==='360x360');return v?v.url:p.preview_file_url};
 function dbImgErr(i){const n=+(i.dataset.r||0);if(n>=3)return;i.dataset.r=n+1;setTimeout(()=>{const u=i.src.split('?')[0];i.src=u+'?r='+(n+1)},400*(n+1))}
