@@ -72,6 +72,7 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 #dbPop{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column}
 @media(min-width:901px){#dbPop{inset:40px auto 40px 50%;width:min(760px,92vw);transform:translateX(-50%);border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:0 10px 40px #000a}}
 #dbHead{display:flex;gap:6px;align-items:center;padding:8px;border-bottom:1px solid var(--line);background:var(--p1);flex:none}
+#dbTabs{flex:none;background:var(--p1);padding:0 8px}#dbTabs button{flex:1;padding:9px 12px}
 #dbQw{flex:1;min-width:0;position:relative}
 #dbAc{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--p2);border:1px solid var(--line);border-radius:6px;z-index:3;max-height:50vh;overflow-y:auto}
 #dbAc button{display:flex;width:100%;background:none;border-radius:0;text-align:left;padding:9px 10px;gap:8px}
@@ -336,6 +337,7 @@ body.med .adv{display:none!important}
 
 <div id="dbPop" class="hide">
  <div id="dbHead"><button class="ic hide" id="dbBack" title="목록으로"></button><div id="dbQw"><input type="text" id="dbQ" placeholder="단부루 태그 검색" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"><div id="dbAc" class="hide"></div></div><button class="ic" id="dbGo" title="검색"></button><button class="ic" id="dbExt" title="단부루 사이트로 열기"></button><button class="ic" id="dbX" title="닫기"></button></div>
+ <div id="dbTabs" class="tabs"><button class="on" data-dt="p">그림</button><button data-dt="a">작가</button></div>
  <div id="dbBody"><div id="dbList"><div id="dbArt" class="hide"></div><div id="dbGrid"></div><div id="dbMsg" class="mut"></div><div id="dbPager"></div><div id="dbRel"></div></div><div id="dbPost" class="hide"></div></div>
 </div>
 <div class="modal" id="mSet"><div class="box">
@@ -1017,9 +1019,13 @@ const dbN=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+'k
 function dbList(){$('#dbPost').classList.add('hide');dbs.post=null;dbBackUI()}
 const dbBackUI=()=>$('#dbBack').classList.toggle('hide',!(dbs.post||dbs.fromArt));
 const DPER=30;
-function dbView(art){$('#dbArt').classList.toggle('hide',!art);['#dbGrid','#dbPager','#dbRel'].forEach(s=>$(s).classList.toggle('hide',art))}
+function dbView(art){dbs.tab=art?'a':'p';$('#dbArt').classList.toggle('hide',!art);['#dbGrid','#dbPager','#dbRel'].forEach(s=>$(s).classList.toggle('hide',art));$$('#dbTabs [data-dt]').forEach(b=>b.classList.toggle('on',(b.dataset.dt==='a')===art));$('#dbQ').placeholder=art?'작가 이름 검색':'단부루 태그 검색'}
+function dbSetTab(t){if(t===(dbs.tab||'p'))return;const v=$('#dbQ').value;if(dbs.tab==='a')dbs.inA=v;else dbs.inP=v;$('#dbQ').value=(t==='a'?dbs.inA:dbs.inP)||'';
+ dbs.gen++;dbs.busy=false;dbs.fromArt=false;dbs.post=null;$('#dbPost').classList.add('hide');$('#dbAc').classList.add('hide');$('#dbMsg').textContent='';dbView(t==='a');$('#dbList').scrollTop=0;dbBackUI()}
+function dbArtPosts(name){dbs.inA=$('#dbQ').value;dbs.gen++;dbs.busy=false;dbView(false);$('#dbQ').value=name;dbs.fromArt=true;dbSearch(name,1)}
+$('#dbTabs').onclick=e=>{const b=e.target.closest('[data-dt]');if(b)dbSetTab(b.dataset.dt)};
 function dbNorm(q){q=q.trim().replace(/\s+/g,' ');return /^artist:/i.test(q)?{art:q.slice(7).trim().replace(/\s+/g,'_')}:{q:q.replace(/(^|\s)artist:/gi,'$1')}}
-async function dbSearch(raw,page){if(dbs.busy)return;const n=dbNorm(raw);if(n.art!==undefined)return dbArtists(n.art);
+async function dbSearch(raw,page){if(dbs.busy)return;const n=dbNorm(raw);if(n.art!==undefined){dbSetTab('a');$('#dbQ').value=n.art;return dbArtists(n.art)}
  dbs.busy=true;const q=n.q;$('#dbAc').classList.add('hide');if(q!==dbs.q)dbs.total=null;
  dbs.q=q;dbs.page=page;dbs.posts=[];$('#dbGrid').innerHTML='';$('#dbRel').innerHTML='';$('#dbPager').innerHTML='';$('#dbList').scrollTop=0;dbList();dbView(false);
  $('#dbMsg').textContent='불러오는 중…';const my=++dbs.gen;
@@ -1051,7 +1057,7 @@ async function dbArtists(name){if(dbs.busy)return;dbs.busy=true;const my=++dbs.g
 $('#dbMsg').addEventListener('click',e=>{if(e.target.closest('#dbRetry'))dbSearch($('#dbQ').value,dbs.page||1)});
 $('#dbPager').onclick=e=>{const b=e.target.closest('[data-pg]');if(b&&!b.disabled)dbSearch(dbs.q,+b.dataset.pg)};
 $('#dbArt').onclick=e=>{const a=e.target.closest('[data-add]'),n=e.target.closest('[data-art]');
- if(a){dbAdd([a.dataset.add]);return}if(n){dbs.artHtml=null;dbs.fromArt=true;dbs.artQ=$('#dbQ').value;$('#dbQ').value=n.dataset.art;dbSearch(n.dataset.art,1).then(dbBackUI)}};
+ if(a){dbAdd([a.dataset.add]);return}if(n)dbArtPosts(n.dataset.art)};
 $('#dbRel').onclick=e=>{const a=e.target.closest('[data-add]'),s=e.target.closest('[data-s]');if(a)dbAdd([a.dataset.add]);else if(s){dbs.fromArt=false;$('#dbQ').value=s.dataset.s;dbSearch(s.dataset.s,1)}};
 const dbTagTxt=(t,cat)=>(cat===1?'artist:':'')+t.replace(/_/g,' ');
 function dbShowPost(id){const p=dbs.posts.find(x=>x.id==id);if(!p)return;dbs.post=p;
@@ -1067,15 +1073,15 @@ function dbAdd(tags){const c=BP().replace(/[\s,]+$/,''),have=new Set(c.split(','
 const dbPostTags=()=>{const p=dbs.post;return p?[[4,p.tag_string_character],[3,p.tag_string_copyright],[0,p.tag_string_general]].flatMap(([k,s])=>(s||'').trim().split(/\s+/).filter(Boolean).map(t=>dbTagTxt(t,k))):[]};
 $('#bDb').onclick=()=>{$('#dbPop').classList.remove('hide');if(!dbs.posts.length&&!dbs.busy)dbSearch($('#dbQ').value,1)};
 $('#dbX').onclick=()=>{$('#dbPop').classList.add('hide');$('#dbAc').classList.add('hide')};
-$('#dbBack').onclick=()=>{if(dbs.post)return dbList();if(dbs.fromArt){dbs.fromArt=false;dbs.gen++;dbs.busy=false;$('#dbQ').value=dbs.artQ;dbView(true);$('#dbMsg').textContent='';$('#dbList').scrollTop=0;dbBackUI()}};
-$('#dbGo').onclick=()=>{$('#dbQ').blur();dbs.fromArt=false;dbSearch($('#dbQ').value,1)};
+$('#dbBack').onclick=()=>{if(dbs.post)return dbList();if(dbs.fromArt){dbs.fromArt=false;dbs.gen++;dbs.busy=false;dbs.inP=$('#dbQ').value;$('#dbQ').value=dbs.inA||'';dbView(true);$('#dbMsg').textContent='';$('#dbList').scrollTop=0;dbBackUI()}};
+$('#dbGo').onclick=()=>{$('#dbQ').blur();dbs.fromArt=false;if(dbs.tab==='a'){const n=$('#dbQ').value.trim().replace(/^artist:/i,'').trim().replace(/\s+/g,'_');if(n)dbArtists(n)}else dbSearch($('#dbQ').value,1)};
 $('#dbQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#dbGo').click()}};
 $('#dbExt').onclick=()=>window.open(dbs.post?`${DBU}/posts/${dbs.post.id}`:`${DBU}/posts?tags=${encodeURIComponent(dbs.q)}`,'danbooru');
 
-$('#dbQ').oninput=()=>{clearTimeout(dbs.acT);const v=$('#dbQ').value,last=v.split(' ').pop(),whole=/^artist:/i.test(v),art=whole||/^artist:/i.test(last),w=whole?v.slice(7).trim().replace(/\s+/g,'_'):last.replace(/^artist:/i,'');if(w.length<(art?1:2)){$('#dbAc').classList.add('hide');return}
+$('#dbQ').oninput=()=>{clearTimeout(dbs.acT);const v=$('#dbQ').value,last=v.split(' ').pop(),whole=dbs.tab==='a'||/^artist:/i.test(v),art=whole||/^artist:/i.test(last),w=whole?v.trim().replace(/^artist:/i,'').trim().replace(/\s+/g,'_'):last.replace(/^artist:/i,'');if(w.length<(art?1:2)){$('#dbAc').classList.add('hide');return}
  dbs.acT=setTimeout(async()=>{const n=++dbs.acN;try{const L=art?(await dbJ(`/tags.json?search[name_matches]=${encodeURIComponent('*'+w+'*')}&search[category]=1&search[hide_empty]=true&search[order]=count&limit=10`)).map(t=>({value:t.name,label:t.name.replace(/_/g,' '),category:1,post_count:t.post_count})):await dbJ(`/autocomplete.json?search[query]=${encodeURIComponent(w)}&search[type]=tag_query&limit=10`);if(n!==dbs.acN)return;
   $('#dbAc').innerHTML=L.map(t=>`<button data-v="${esc(t.value)}" class="c${t.category??0}">${esc((t.antecedent?t.antecedent.replace(/_/g,' ')+' → ':'')+t.label)}<em>${dbN(t.post_count)}</em></button>`).join('');$('#dbAc').classList.toggle('hide',!L.length)}catch{}},250)};
-$('#dbAc').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;const v0=$('#dbQ').value,a=/^artist:/i.test(v0)?[]:v0.split(' ');if(a.length)a[a.length-1]=b.dataset.v;else a.push(b.dataset.v);const q=a.join(' ');$('#dbQ').value=q;$('#dbQ').blur();dbs.fromArt=false;dbSearch(q,1)};
+$('#dbAc').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;if(dbs.tab==='a'){$('#dbAc').classList.add('hide');$('#dbQ').blur();return dbArtPosts(b.dataset.v)}const v0=$('#dbQ').value,a=/^artist:/i.test(v0)?[]:v0.split(' ');if(a.length)a[a.length-1]=b.dataset.v;else a.push(b.dataset.v);const q=a.join(' ');$('#dbQ').value=q;$('#dbQ').blur();dbs.fromArt=false;dbSearch(q,1)};
 $('#dbBody').addEventListener('pointerdown',()=>$('#dbAc').classList.add('hide'));
 $('#dbGrid').onclick=e=>{const b=e.target.closest('[data-id]');if(b)dbShowPost(b.dataset.id)};
 $('#dbPost').onclick=e=>{const a=e.target.closest('[data-add]'),s=e.target.closest('[data-s]');
