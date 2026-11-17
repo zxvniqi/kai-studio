@@ -32,8 +32,8 @@ input[type=checkbox]{accent-color:var(--acc);width:16px;height:16px}
 #left,#pBody,#tabP,#tabR,#sPanel{display:flex;flex-direction:column;gap:12px}
 #foot{grid-area:3/1;padding:10px 12px;border-top:1px solid var(--line);border-right:1px solid var(--line);background:var(--p1);display:flex;gap:6px}
 #stage{grid-area:1/2/4/3;position:relative;display:flex;flex-direction:column;min-width:0;min-height:0}
-#hist{grid-area:1/3/4/4;background:var(--p1);border-left:1px solid var(--line);overflow-y:auto;padding:8px}
-#histG{display:flex;flex-direction:column;gap:8px}
+#hist{grid-area:1/3/4/4;background:var(--p1);border-left:1px solid var(--line);overflow:hidden;padding:8px;display:flex;flex-direction:column}
+#histG{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow-y:auto;align-content:start}
 #grip,.phead,#bGear,#bHist{display:none}
 .sec{background:var(--p2);border-radius:6px;padding:10px}
 .sec>h4,.sec>summary{margin:0 0 8px;font-size:13px;font-weight:700;color:var(--acc);display:flex;align-items:center;gap:6px}
@@ -129,7 +129,7 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 #spin.pv i{display:none}
 .chk{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:8px 0}
 .chk .grow b{display:block;font-size:13px}.chk .grow span{display:block;color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#histBar{display:flex;gap:6px;padding:8px 0;position:sticky;bottom:0;background:var(--p1)}
+#histBar{display:flex;gap:6px;padding:8px 0 0;flex:none;background:var(--p1);border-top:1px solid var(--line);margin-top:8px}
 #ac{background:var(--p2);border:1px solid var(--line);border-radius:8px;display:none;margin-top:6px;padding:8px 0 6px}
 #ac .ah{display:flex;align-items:center;padding:0 8px 6px 12px;color:var(--mut);font-size:13px}
 #ac .ah span{flex:1}
@@ -189,7 +189,7 @@ body.med .adv{display:none!important}
  #bGear,#bHist{display:inline-grid;width:44px;height:44px}
  #sPanel,#hist{position:fixed;inset:0 0 calc(61px + env(safe-area-inset-bottom)) 0;z-index:15;background:var(--p1);padding:12px;overflow-y:auto;display:none;border:none}
  #sPanel.open{display:flex}
- #hist.open{display:block}
+ #hist.open{display:flex;overflow:hidden}
  .phead{display:flex;align-items:center;font-size:17px;font-weight:700;margin-bottom:4px}
  .phead span{flex:1}
  #histG{display:grid;grid-template-columns:repeat(3,1fr)}
