@@ -1,5 +1,5 @@
 // Network first for this site's own files, cached copy when offline. API / Danbooru requests are not touched.
-const C = 'nai-studio-v2';
+const C = 'kai-studio-v1';
 self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(C).then(c => c.addAll(['./', 'manifest.json', 'icon-192.png', 'icon-512.png']))); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== C).map(x => caches.delete(x)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

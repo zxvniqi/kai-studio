@@ -26,7 +26,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 
 public class MainActivity extends Activity {
-    static final String HOME = "https://zxvniqi.github.io/nai-studio/";
+    static final String HOME = "https://zxvniqi.github.io/kai-studio/";
     static final String HOST = "zxvniqi.github.io";
     static final int PICK = 7;
 
@@ -113,7 +113,7 @@ public class MainActivity extends Activity {
 
     static boolean isOurs(Uri u) {
         String p = u.getPath();
-        return "https".equals(u.getScheme()) && HOST.equals(u.getHost()) && p != null && p.startsWith("/nai-studio/");
+        return "https".equals(u.getScheme()) && HOST.equals(u.getHost()) && p != null && (p.startsWith("/kai-studio/") || p.startsWith("/nai-studio"));
     }
 
     boolean fromUs() {
