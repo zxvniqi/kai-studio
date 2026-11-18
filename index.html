@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>NAI Studio</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0e0f21">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NAI Studio">
 <style>
 :root{--bg:#0e0f21;--p1:#13152c;--p2:#191b31;--p3:#22253f;--line:#2b2d4a;--tx:#fff;--mut:#9a9cb8;--acc:#f5f3c2;--bad:#ff7878}
 *{box-sizing:border-box}
@@ -1325,6 +1333,7 @@ document.addEventListener('keydown',e=>{
  await restoreRefs();prReady=true;
  if(tok)refreshAnlas();else open('#mSet');
 })();
+if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>
