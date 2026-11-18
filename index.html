@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>NAI Studio</title>
+<title>Kai Studio</title>
 <link rel="manifest" href="manifest.json?v=2">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="NAI Studio">
+<meta name="apple-mobile-web-app-title" content="Kai Studio">
 <style>
 :root{--bg:#0e0f21;--p1:#13152c;--p2:#191b31;--p3:#22253f;--line:#2b2d4a;--tx:#fff;--mut:#9a9cb8;--acc:#f5f3c2;--bad:#ff7878}
 *{box-sizing:border-box}
@@ -249,7 +249,7 @@ body.med .adv{display:none!important}
 </head>
 <body>
 <div id="app">
-<header id="top"><b>NAI Studio</b><span id="v5q" class="hide" title="V5 무료 할당량 남은 비율"></span><span id="anlas" title="Anlas 잔액 새로고침">✦ –</span>
+<header id="top"><b>Kai Studio</b><span id="v5q" class="hide" title="V5 무료 할당량 남은 비율"></span><span id="anlas" title="Anlas 잔액 새로고침">✦ –</span>
  <button class="ic" id="bDb" title="단부루 태그 찾기"></button><button class="ic" id="bPreset" title="프리셋"></button><button class="ic" id="bSet" title="토큰 · 앱 설정"></button></header>
 
 <div id="left">
@@ -1169,11 +1169,11 @@ const BK_KEYS=['nai_dbbm','nai_presets','nai_chunks','nai_state','nai_enh','nai_
 $('#bExp').innerHTML=ic('save')+' 파일로 저장';$('#bImp').innerHTML=ic('upl')+' 파일 불러오기';
 const bkJ=(s,d)=>{try{const v=JSON.parse(s);return v??d}catch{return d}};
 $('#bExp').onclick=()=>{const data={};BK_KEYS.forEach(k=>{if(LS[k]!=null)data[k]=LS[k]});const d=new Date(),p=n=>String(n).padStart(2,'0');
- const b=new Blob([JSON.stringify({app:'nai-studio',v:1,at:d.toISOString(),data},null,1)],{type:'application/json'}),a=document.createElement('a');
- a.href=URL.createObjectURL(b);a.download=`nai-studio-backup-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('백업 파일 저장')};
+ const b=new Blob([JSON.stringify({app:'kai-studio',v:1,at:d.toISOString(),data},null,1)],{type:'application/json'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(b);a.download=`kai-studio-backup-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('백업 파일 저장')};
 $('#bImp').onclick=()=>$('#fImp').click();
 $('#fImp').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;let j=null;try{j=JSON.parse(await f.text())}catch{}
- if(!j||j.app!=='nai-studio'||!j.data||typeof j.data!=='object')return toast('NAI Studio 백업 파일이 아닙니다',1);
+ if(!j||!/^[nk]ai-studio$/.test(j.app)||!j.data||typeof j.data!=='object')return toast('Kai Studio 백업 파일이 아닙니다',1);
  bkImp=j;const D=j.data,bm=bkJ(D.nai_dbbm,{}),n=[['북마크',(bm.i||[]).length],['폴더',(bm.f||[]).length],['프리셋',Object.keys(bkJ(D.nai_presets,{})).length],['청크',bkJ(D.nai_chunks,[]).length]];
  $('#impInfo').textContent=n.map(x=>x[0]+' '+x[1]).join(' · ')+(D.nai_state?' · 설정':'');close('#mSet');open('#mImp')};
 function bkDone(m){close('#mImp');bkImp=null;toast(m);setTimeout(()=>location.reload(),700)}

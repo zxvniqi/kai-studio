@@ -47,6 +47,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           rm -f "$SIGN_STORE"
-          cp android/app/build/outputs/apk/release/app-release.apk nai-studio.apk
+          cp android/app/build/outputs/apk/release/app-release.apk kai-studio.apk
           gh release delete app -y --cleanup-tag || true
-          gh release create app nai-studio.apk --title "NAI Studio 앱 (build ${{ github.run_number }})" --notes "안드로이드 앱 설치 파일" --latest
+          gh release create app kai-studio.apk --title "Kai Studio 앱 (build ${{ github.run_number }})" --notes "안드로이드 앱 설치 파일" --latest

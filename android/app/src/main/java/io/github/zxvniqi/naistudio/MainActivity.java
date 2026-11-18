@@ -173,12 +173,12 @@ public class MainActivity extends Activity {
                     cv.put(MediaStore.MediaColumns.MIME_TYPE, mime);
                     boolean img = mime != null && mime.startsWith("image/");
                     cv.put(MediaStore.MediaColumns.RELATIVE_PATH,
-                            (img ? Environment.DIRECTORY_PICTURES : Environment.DIRECTORY_DOWNLOADS) + "/NAI Studio");
+                            (img ? Environment.DIRECTORY_PICTURES : Environment.DIRECTORY_DOWNLOADS) + "/Kai Studio");
                     Uri col = img ? MediaStore.Images.Media.EXTERNAL_CONTENT_URI : MediaStore.Downloads.EXTERNAL_CONTENT_URI;
                     saveUri = getContentResolver().insert(col, cv);
                     saveOut = getContentResolver().openOutputStream(saveUri);
                 } else {
-                    File d = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "NAI Studio");
+                    File d = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Kai Studio");
                     d.mkdirs();
                     saveOut = new FileOutputStream(new File(d, name));
                 }
