@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>NAI Studio</title>
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json?v=2">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0e0f21">
@@ -1333,6 +1333,7 @@ document.addEventListener('keydown',e=>{
  await restoreRefs();prReady=true;
  if(tok)refreshAnlas();else open('#mSet');
 })();
+const oLock=()=>{try{screen.orientation.lock("portrait").catch(()=>{})}catch{}};oLock();addEventListener("orientationchange",oLock);document.addEventListener("visibilitychange",()=>{if(!document.hidden)oLock()});
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
