@@ -614,7 +614,7 @@ const tabNow=()=>$('#ptabs button.on').dataset.tab;
 const slideTo=(el,x,ms,done)=>{el.style.transition=ms?`transform ${ms}ms cubic-bezier(.2,.7,.3,1)`:'none';el.style.transform=x?`translateX(${x}px)`:'translateX(0)';
  if(done)setTimeout(done,ms)};
 const clearSlide=el=>{el.style.transition='';el.style.transform=''};
-$('#pBody').addEventListener('touchstart',e=>{const t=e.target;if(e.touches.length!==1||t.closest('input[type=range],#ac,select,.ns,.seg,#ptabs'))return sw=null;
+$('#pBody').addEventListener('touchstart',e=>{const t=e.target;const ae=document.activeElement;if(e.touches.length!==1||t.closest('input[type=range],#ac,select,.ns,.seg,#ptabs,textarea,input[type=text],input[type=number],input[type=search],.hl')||(ae&&ae.matches('textarea,input[type=text],input[type=number],input[type=search]')))return sw=null;
  const c=e.touches[0];sw={x:c.clientX,y:c.clientY,t:Date.now(),lock:null,dx:0,el:$(TEL[tabNow()])}},{passive:true});
 $('#pBody').addEventListener('touchmove',e=>{if(!sw)return;const c=e.touches[0],dx=c.clientX-sw.x,dy=c.clientY-sw.y;
  if(!sw.lock){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;sw.lock=Math.abs(dx)>Math.abs(dy)*1.2?'h':'v'}
