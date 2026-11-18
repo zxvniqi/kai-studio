@@ -228,7 +228,7 @@ body.med .adv{display:none!important}
  #pPanel.drag{transition:none}
  #pPanel{order:2;flex:none;height:58px;position:relative;z-index:2;transition:height .18s ease-out;display:flex;flex-direction:column;background:var(--p1);border-top:1px solid var(--line);border-radius:12px 12px 0 0;overflow:hidden}
  #grip{display:block;flex:none;touch-action:none;cursor:grab;padding:12px 14px 10px}
- #ptabs{touch-action:none}
+ #ptabs{touch-action:none;position:sticky;top:0;z-index:3;flex:none;background:var(--p1);margin:0 -10px;padding:0 10px}
  #grip>i{display:block;width:44px;height:4px;border-radius:2px;background:var(--p3);margin:0 auto 4px}
  #sum{display:none;align-items:center;gap:8px;color:var(--mut);height:26px}
  #sumT{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1027,6 +1027,14 @@ $('#view').addEventListener('pointermove',e=>{if(!vz.p.has(e.pointerId))return;v
  vzClamp(b);vzApply()});
 ['pointerup','pointercancel'].forEach(t=>$('#view').addEventListener(t,e=>{vz.p.delete(e.pointerId);if(vz.s<1.03){vz.s=1;vz.tx=vz.ty=0;vzApply()}vzInit()}));
 document.addEventListener('gesturestart',e=>e.preventDefault());
+/* double tap: zoom in at the tapped point / back to fit */
+let vzTap=null,vzDown=null;
+$('#view').addEventListener('pointerdown',e=>{vzDown=vz.p.size?null:{x:e.clientX,y:e.clientY,t:Date.now()}},true);
+$('#view').addEventListener('pointerup',e=>{const im=$('#view img');if(!im||vz.p.size>1)return;const now=Date.now(),x=e.clientX,y=e.clientY,d=vzDown;vzDown=null;if(!d||now-d.t>300||Math.hypot(x-d.x,y-d.y)>12){vzTap=null;return}
+ if(vzTap&&now-vzTap.t<320&&Math.hypot(x-vzTap.x,y-vzTap.y)<30){vzTap=null;const b=vzBox();if(!b)return;
+  if(vz.s>1){vz.s=1;vz.tx=vz.ty=0}else{const s=2.5,px=x-b.x,py=y-b.y;vz.s=s;vz.tx=px-s*px;vz.ty=py-s*py;vzClamp(b)}
+  im.style.transition='transform .2s ease-out';vzApply();setTimeout(()=>{im.style.transition=''},220);return}
+ vzTap={x,y,t:now}},true);
 
 /* ---------- danbooru popup ---------- */
 const DBU='https://danbooru.donmai.us';
