@@ -971,15 +971,21 @@ $('#bar').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b||!cur)ret
 /* ---------- image import (metadata / i2i / vibe / ref) ---------- */
 const inflate=async(u,fmt)=>new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream(fmt))).arrayBuffer());
 function metaFrom(o){if(!o)return null;if(typeof o==='string'){try{o=JSON.parse(o)}catch{return null}}
- if(o.Comment)return metaFrom(o.Comment);if(o.prompt!=null||o.v4_prompt||o.steps!=null)return o;return null}
-async function readChunks(blob){const u=new Uint8Array(await blob.arrayBuffer()),dv=new DataView(u.buffer);if(u.length<8||dv.getUint32(0)!==0x89504e47)return null;let o=8;const td=new TextDecoder('latin1'),tu=new TextDecoder();
+ if(o.Comment){const m=metaFrom(o.Comment);if(m&&o.Source&&!m._src)m._src=o.Source;return m}if(o.prompt!=null||o.v4_prompt||o.steps!=null)return o;return null}
+async function readChunks(blob){const u=new Uint8Array(await blob.arrayBuffer()),dv=new DataView(u.buffer);if(u.length<8||dv.getUint32(0)!==0x89504e47)return null;let o=8,meta=null,src=null;const td=new TextDecoder('latin1'),tu=new TextDecoder();
  while(o<u.length-12){const len=dv.getUint32(o),type=td.decode(u.subarray(o+4,o+8)),c=u.subarray(o+8,o+8+len);
   if(type==='tEXt'||type==='iTXt'||type==='zTXt'){const z=c.indexOf(0),key=td.decode(c.subarray(0,z));let txt=null;
    if(type==='tEXt')txt=tu.decode(c.subarray(z+1));
    else if(type==='zTXt')txt=tu.decode(await inflate(c.subarray(z+2),'deflate'));
    else{const cf=c[z+1];let p=z+3;p=c.indexOf(0,p)+1;p=c.indexOf(0,p)+1;const body=c.subarray(p);txt=tu.decode(cf?await inflate(body,'deflate'):body)}
-   if(key==='Comment'){const m=metaFrom(txt);if(m)return m}else if(/^(parameters|Description)$/.test(key)){}}
-  if(type==='IEND')break;o+=12+len}return null}
+   if(key==='Comment'){const m=metaFrom(txt);if(m)meta=m}else if(key==='Source')src=txt}
+  if(type==='IEND')break;o+=12+len}if(meta&&src&&!meta._src)meta._src=src;return meta}
+/* NAI "Source" text -> model (same table NovelAI's own importer uses) */
+function srcModel(s){if(!s)return null;const h=(s.match(/([0-9A-F]{8})\s*$/i)||[])[1];const H=h?h.toUpperCase():'',has=l=>l.split(' ').includes(H);
+ if(s.includes('NovelAI Diffusion V5')){if(has('93F4BD30 70AB5786'))return{id:'nai-diffusion-5-full',eff:'medium'};if(has('657484A5 0ADF9AB7'))return{id:'nai-diffusion-5-full',eff:'high'};return{id:'nai-diffusion-5-curated'}}
+ if(/NovelAI Diffusion V4|NAIv4next/.test(s)){if(has('4BDE2A90 1229B44F B9F340FD F3D95188'))return{id:'nai-diffusion-4-5-full'};if(has('C02D4F98 5AB81C7C B5A2A797'))return{id:'nai-diffusion-4-5-curated'};
+  if(has('37442FCA 4F49EC75 CA4B7203 79F47848 F6302A9D'))return{id:'nai-diffusion-4-full'};return{id:s.includes('V4.5')?'nai-diffusion-4-5-curated':'nai-diffusion-4-curated-preview'}}
+ if(has('B0BDF6C1 C1E1DE52 7BCCAA2C 1120E6A9 8BA2AF87'))return{id:'nai-diffusion-3'};if(has('4BE8C60C C8704949 37C2B166 F306816B 9CC2F394'))return{id:'nai-diffusion-furry-3'};return null}
 async function readStealth(blob){const bm=await createImageBitmap(blob,{premultiplyAlpha:'none',colorSpaceConversion:'none'});const W=bm.width,H=bm.height;
  const c=cv(W,H),x=c.getContext('2d',{willReadFrequently:true});x.drawImage(bm,0,0);const d=x.getImageData(0,0,W,H).data;
  let bit=0;const get=n=>{const out=new Uint8Array(n);for(let k=0;k<n*8;k++,bit++){const px=Math.floor(bit/H),py=bit%H;if(px>=W)throw 0;out[k>>3]|=(d[(py*W+px)*4+3]&1)<<(7-(k&7))}return out};
@@ -989,6 +995,7 @@ async function readStealth(blob){const bm=await createImageBitmap(blob,{premulti
 async function readMeta(blob){try{const m=await readChunks(blob);if(m)return m}catch{}try{return await readStealth(blob)}catch{}return null}
 function applyMeta(j){
  const f=S.imp,o={},v=j.v4_prompt&&j.v4_prompt.caption,n=j.v4_negative_prompt&&j.v4_negative_prompt.caption;
+ if(f.s){const mm=srcModel(j._src||(j.model_name&&j.model_hash?j.model_name+' '+j.model_hash:''));if(mm&&MODELS.some(m=>m.id===mm.id)){S.model=mm.id;if(mm.eff)S.effort=mm.eff}}
  if(f.p||f.c)o.rnd=null;
  if(f.p){o.prompt=(v&&v.base_caption)||j.prompt||'';o.q=0}
  if(f.u){o.uc=(n&&n.base_caption!=null?n.base_caption:j.uc)||'';o.ucp=model().u.length}
