@@ -16,10 +16,11 @@ android {
 
     signingConfigs {
         release {
-            storeFile file('../release.jks')
-            storePassword 'naistudio'
+            storeFile file(System.getenv('SIGN_STORE') ?: 'missing.p12')
+            storeType 'pkcs12'
+            storePassword System.getenv('SIGN_PASS')
             keyAlias 'nai'
-            keyPassword 'naistudio'
+            keyPassword System.getenv('SIGN_PASS')
         }
     }
 

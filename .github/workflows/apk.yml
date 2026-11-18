@@ -23,17 +23,20 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Create signing key once (kept in repo so updates install over the old app)
+      - name: Load signing key from secrets
+        env:
+          KS: ${{ secrets.APK_KEYSTORE }}
+          PW: ${{ secrets.APK_KEY_PASS }}
         run: |
-          if [ ! -f android/release.jks ]; then
-            keytool -genkeypair -v -keystore android/release.jks -storepass naistudio -keypass naistudio \
-              -alias nai -keyalg RSA -keysize 2048 -validity 36500 -dname "CN=NAI Studio"
-            git config user.name github-actions
-            git config user.email github-actions@users.noreply.github.com
-            git add android/release.jks
-            git commit -m "Add APK signing key [skip ci]"
-            git push
-          fi
+          if [ -z "$KS" ] || [ -z "$PW" ]; then echo "::error::APK_KEYSTORE / APK_KEY_PASS secrets are not set"; exit 1; fi
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/src.p12"
+          SRC_ALIAS=$(keytool -list -v -storetype pkcs12 -keystore "$RUNNER_TEMP/src.p12" -storepass "$PW" | sed -n 's/^Alias name: //p' | head -1)
+          keytool -importkeystore -noprompt -srcstoretype pkcs12 -srckeystore "$RUNNER_TEMP/src.p12" -srcstorepass "$PW" -srcalias "$SRC_ALIAS" \
+            -deststoretype pkcs12 -destkeystore "$RUNNER_TEMP/release.p12" -deststorepass "$PW" -destkeypass "$PW" -destalias nai
+          rm "$RUNNER_TEMP/src.p12"
+          echo "SIGN_STORE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+          echo "::add-mask::$PW"
+          echo "SIGN_PASS=$PW" >> "$GITHUB_ENV"
 
       - name: Build
         working-directory: android
@@ -43,6 +46,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          rm -f "$SIGN_STORE"
           cp android/app/build/outputs/apk/release/app-release.apk nai-studio.apk
           gh release delete app -y --cleanup-tag || true
           gh release create app nai-studio.apk --title "NAI Studio 앱 (build ${{ github.run_number }})" --notes "안드로이드 앱 설치 파일" --latest

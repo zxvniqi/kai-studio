@@ -49,6 +49,10 @@ public class MainActivity extends Activity {
         s.setDatabaseEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setSupportZoom(false);
+        s.setAllowFileAccess(false);
+        s.setAllowContentAccess(false);
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        s.setSupportMultipleWindows(false);
         s.setUserAgentString(s.getUserAgentString() + " NAIStudioApp");
 
         web.addJavascriptInterface(new Bridge(), "NAIApp");
@@ -57,7 +61,7 @@ public class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
                 Uri u = r.getUrl();
-                if (HOST.equals(u.getHost())) return false;
+                if (isOurs(u)) return false;
                 openExternal(u.toString());
                 return true;
             }
@@ -107,7 +111,20 @@ public class MainActivity extends Activity {
         });
     }
 
+    static boolean isOurs(Uri u) {
+        String p = u.getPath();
+        return "https".equals(u.getScheme()) && HOST.equals(u.getHost()) && p != null && p.startsWith("/nai-studio/");
+    }
+
+    boolean fromUs() {
+        String cur = web.getUrl();
+        return cur != null && isOurs(Uri.parse(cur));
+    }
+
     void openExternal(String url) {
+        Uri u = Uri.parse(url);
+        String sc = u.getScheme();
+        if (!"https".equals(sc) && !"http".equals(sc)) return;
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (Exception ignored) {
@@ -119,13 +136,24 @@ public class MainActivity extends Activity {
     }
 
     class Bridge {
+        // the page URL is read on the UI thread; bridge calls arrive on a background thread
+        boolean onPage() {
+            final boolean[] ok = {false};
+            final java.util.concurrent.CountDownLatch l = new java.util.concurrent.CountDownLatch(1);
+            runOnUiThread(() -> { ok[0] = fromUs(); l.countDown(); });
+            try { l.await(2, java.util.concurrent.TimeUnit.SECONDS); } catch (InterruptedException ignored) {}
+            return ok[0];
+        }
+
         @JavascriptInterface
         public void open(String url) {
+            if (!onPage()) return;
             runOnUiThread(() -> openExternal(url));
         }
 
         @JavascriptInterface
         public void copy(String t) {
+            if (!onPage()) return;
             ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
             cm.setPrimaryClip(ClipData.newPlainText("text", t));
         }
@@ -134,6 +162,10 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean begin(String name, String mime) {
             try {
+                if (!onPage()) return false;
+                name = name.replaceAll("[\\\\/:*?\"<>|\\x00-\\x1f]", "_");
+                if (name.startsWith(".") || name.isEmpty()) name = "file_" + name;
+                if (saveOut != null) try { saveOut.close(); } catch (Exception ignored) {}
                 saveName = name;
                 if (Build.VERSION.SDK_INT >= 29) {
                     ContentValues cv = new ContentValues();
