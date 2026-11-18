@@ -1333,6 +1333,18 @@ document.addEventListener('keydown',e=>{
  await restoreRefs();prReady=true;
  if(tok)refreshAnlas();else open('#mSet');
 })();
+/* ---------- android app bridge ---------- */
+if(window.NAIApp){const A=window.NAIApp;
+ HTMLAnchorElement.prototype.click=function(){if(!this.download||!this.href)return HTMLElement.prototype.click.call(this);const name=this.download,u=this.href;
+  fetch(u).then(r=>r.blob()).then(async b=>{if(!A.begin(name,b.type||'application/octet-stream'))throw 0;const N=786432;
+   for(let i=0;i<b.size;i+=N){const s=await new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(fr.result.slice(fr.result.indexOf(',')+1));fr.onerror=no;fr.readAsDataURL(b.slice(i,i+N))});if(!A.chunk(s))throw 0}
+   if(!A.end())throw 0;toast('저장됨: '+name)}).catch(()=>toast('저장 실패',1))};
+ window.open=u=>{A.open(String(new URL(u,location.href)));return null};
+ try{navigator.clipboard.writeText=t=>{A.copy(String(t));return Promise.resolve()}}catch{}
+ window.naiBack=()=>{const m=$('#dbMenu');if(m&&!m.classList.contains('hide')){m.classList.add('hide');return true}
+  const md=[...$$('.modal.on')].pop();if(md){md.classList.remove('on');return true}
+  if(!$('#dbPop').classList.contains('hide')){const bk=$('#dbBack');if(!bk.classList.contains('hide'))bk.click();else $('#dbX').click();return true}
+  if($$('#sPanel.open,#hist.open').length){closePanels();return true}return false}}
 const oLock=()=>{try{screen.orientation.lock("portrait").catch(()=>{})}catch{}};oLock();addEventListener("orientationchange",oLock);document.addEventListener("visibilitychange",()=>{if(!document.hidden)oLock()});
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
