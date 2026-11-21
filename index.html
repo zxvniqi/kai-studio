@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json?v=2">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611211916">
+<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611211927">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1334,7 +1334,10 @@ const ac=$('#ac');let acT,acTa=null,acList=[],acI=0,acOff=false,acModel=null,acS
 function acTok(t){const v=t.value,c=t.selectionStart;let a=Math.max(v.lastIndexOf(',',c-1),v.lastIndexOf('\n',c-1),v.lastIndexOf('|',c-1),v.lastIndexOf(':',c-1))+1;while(a<c&&/[\s{\[]/.test(v[a]))a++;return {a,b:c,s:v.slice(a,c)}}
 const acHide=()=>{ac.style.display='none';acList=[]};
 async function acRun(t){
- const k=acTok(t),q=k.s.trim().replace(/^-?\d*\.?\d+$/,'');if(!S.ac||q.length<2)return acHide();const seq=++acSeq;
+ const k=acTok(t);if(k.s.startsWith('@')){++acSeq;const w=k.s.slice(1).trim().toLowerCase(),L=chunks().filter(c=>!w||(c.n||'').toLowerCase().includes(w)||c.t.toLowerCase().includes(w)).slice(0,20);if(!L.length)return acHide();
+  acList=L.map(c=>({tag:c.t,label:(c.k==='c'?(GI[c.g]||'○')+' ':'')+(c.n||c.t.slice(0,24)),ck:1}));acTa=t;acR=k;acI=0;acDraw();
+  const an=t.closest('.hl')||t,nx=an.nextElementSibling;(nx&&nx.classList.contains('tb')?nx:an).after(ac);ac.style.display='block';ac.scrollTop=0;acReveal(t);return}
+ const q=k.s.trim().replace(/^-?\d*\.?\d+$/,'');if(!S.ac||q.length<2)return acHide();const seq=++acSeq;
  try{const md=acModel||(model().gen>=4?(S.model.includes('furry')?'nai-diffusion-4-5-full':S.model):'nai-diffusion-3');
   const r=await fetch(`${HOST}/ai/generate-image/suggest-tags?model=${md}&prompt=${encodeURIComponent(q)}`);
   if(!r.ok){if(!acModel&&r.status===400)acModel='nai-diffusion-4-5-full';return acHide()}
@@ -1357,9 +1360,9 @@ function acReveal(t){const v=viewBox(t);if(!v)return;const d=ac.getBoundingClien
 let kcT=0;const kcLater=()=>{clearTimeout(kcT);kcT=setTimeout(()=>keepCaret(),260)};
 addEventListener('resize',kcLater);if(window.visualViewport)visualViewport.addEventListener('resize',kcLater);
 document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('textarea.pr')){kcLater();setTimeout(()=>keepCaret(),600)}});
-function acDraw(){ac.innerHTML=`<div class="ah"><span>혹시 이 태그?</span><button class="ic" data-x title="닫기">${ic('x')}</button></div><div class="ar">${acList.map((t,i)=>`<button class="${i===acI?'on':''}" data-i="${i}" title="${t.count??''}">${esc(t.tag)}<i style="opacity:${Math.min(1,.25+Math.log10((t.count||1))/4).toFixed(2)}"></i></button>`).join('')}</div>`}
-function acPick(i){const t=acTa,k=acR||acTok(t),tag=acList[i].tag;t.setRangeText(tag+', ',k.a,k.b,'end');t.dispatchEvent(new Event('input',{bubbles:true}));acHide();clearTimeout(acT);t.focus({preventScroll:true})}
-document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('textarea.pr')&&e.isTrusted){clearTimeout(acT);acT=setTimeout(()=>acRun(e.target),280)}});
+function acDraw(){ac.innerHTML=`<div class="ah"><span>${acList[0]&&acList[0].ck?'청크':'혹시 이 태그?'}</span><button class="ic" data-x title="닫기">${ic('x')}</button></div><div class="ar">${acList.map((t,i)=>t.ck?`<button class="${i===acI?'on':''}" data-i="${i}" title="${esc(t.tag)}">${esc(t.label)}</button>`:`<button class="${i===acI?'on':''}" data-i="${i}" title="${t.count??''}">${esc(t.tag)}<i style="opacity:${Math.min(1,.25+Math.log10((t.count||1))/4).toFixed(2)}"></i></button>`).join('')}</div>`}
+function acPick(i){const t=acTa,k=acR||acTok(t),tag=acList[i].ck?acList[i].tag.replace(/[\s,]+$/,''):acList[i].tag;t.setRangeText(tag+', ',k.a,k.b,'end');t.dispatchEvent(new Event('input',{bubbles:true}));acHide();clearTimeout(acT);t.focus({preventScroll:true})}
+document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('textarea.pr')&&e.isTrusted){clearTimeout(acT);acT=setTimeout(()=>acRun(e.target),acTok(e.target).s.startsWith('@')?60:280)}});
 ac.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')e.preventDefault()});
 ac.addEventListener('click',e=>{if(e.target.closest('[data-x]'))return acHide();const d=e.target.closest('[data-i]');if(d)acPick(+d.dataset.i)});
 document.addEventListener('keydown',e=>{
