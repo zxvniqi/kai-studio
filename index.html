@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json?v=2">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611211915">
+<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611211916">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1396,7 +1396,7 @@ const oLock=()=>{try{screen.orientation.lock("portrait").catch(()=>{})}catch{}};
 /* app resumed: reload if a newer version is deployed (skip while busy, typing, or holding unsaved reference images) */
 const KV=(document.querySelector('meta[name=kv]')||{}).content;
 async function kvCheck(){if(busy||document.hidden||base||vibes.length||refs.length)return;const a=document.activeElement;if(a&&a.matches&&a.matches('textarea,input'))return;
- try{const t=await(await fetch(location.pathname+'?kv='+Date.now(),{cache:'no-store'})).text(),m=t.match(/name="kv" content="202611211915"]+)"/);if(m&&KV&&m[1]!==KV&&m[1]!=='KV_STAMP')location.reload()}catch{}}
+ try{const t=await(await fetch(location.pathname+'?kv='+Date.now(),{cache:'no-store'})).text(),m=t.match(/name=.kv. content=.([0-9A-Z_]+)/);if(m&&KV&&m[1]!==KV&&m[1]!=='KV_STAMP')location.reload()}catch{}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)kvCheck()});document.addEventListener("visibilitychange",()=>{if(!document.hidden)oLock()});
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
