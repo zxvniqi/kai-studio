@@ -260,7 +260,7 @@ body.med .adv{display:none!important}
    <div id="tabP">
     <div class="sec pbox" id="pBox">
      <div class="row"><b class="ph" id="phP">프롬프트</b><span id="phTabs" class="row hide"><button class="chip on" data-pt="p">프롬프트</button><button class="chip" data-pt="u">제외 (UC)</button></span><span class="sp"></span>
-      <button class="ic" id="bDice" title="랜덤 프롬프트"></button><button class="ic" id="bBig" title="입력창 크게"></button><button class="ic hide" id="bDetach" title="UC 분리해서 따로 보기"></button></div>
+      <button class="ic" id="bChSave" title="청크로 저장"></button><button class="ic" id="bDice" title="랜덤 프롬프트"></button><button class="ic" id="bBig" title="입력창 크게"></button><button class="ic hide" id="bDetach" title="UC 분리해서 따로 보기"></button></div>
      <div class="row hide" id="rndBar" style="margin-top:8px"><b style="color:var(--acc)">랜덤 프롬프트</b><span class="sp"></span><button class="ic" id="bRndX" title="원래 프롬프트로"></button><button class="ic" id="bRndRe" title="다시 굴리기"></button></div>
      <textarea class="pr" data-k="prompt" id="tPrompt" rows="6" placeholder="프롬프트 · ||a|b|| 랜덤"></textarea>
      <div class="row" id="rowP"><button class="chip o5" id="bTransp">투명 배경</button><span class="sp"></span><select class="mini" data-k="q" data-num id="q"></select></div>
@@ -678,7 +678,7 @@ function renderChars(){
   <button class="ic" data-c="up" title="위로">${ic('au')}</button><button class="ic" data-c="dn" title="아래로">${ic('ad')}</button>
   <button class="ic" data-c="on" title="켜기/끄기">${ic(on?'check':'x')}</button>
   <button class="ic" data-c="del" title="삭제">${ic('trash')}</button><button class="ic" data-c="fold" title="접기/펼치기">${ic('fold')}</button></div>
-  ${op?`<div class="row" style="margin-top:6px"><button class="chip ${c.tab!=='uc'?'on':''}" data-c="tp">프롬프트</button><button class="chip ${c.tab==='uc'?'on':''}" data-c="tu">UC${c.uc.trim()?' ●':''}</button></div>
+  ${op?`<div class="row" style="margin-top:6px"><button class="chip ${c.tab!=='uc'?'on':''}" data-c="tp">프롬프트</button><button class="chip ${c.tab==='uc'?'on':''}" data-c="tu">UC${c.uc.trim()?' ●':''}</button><span class="sp"></span><button class="ic" data-c="sv" title="청크로 저장">${ic('save')}</button></div>
    ${c.tab==='uc'?`<textarea class="pr ch" data-f="uc" placeholder="캐릭터 UC">${esc(c.uc)}</textarea>`:`<textarea class="pr ch" data-f="p" placeholder="girl, ...">${esc(c.p)}</textarea>`}`
      :`<div class="prev" data-c="fold">${esc(c.p)||'(비어 있음)'}</div>`}</div>`}).join('');
  hlInit($("#chars"));refresh();
@@ -688,6 +688,7 @@ $('#chars').addEventListener('input',e=>{const c=e.target.closest('.card');if(c&
 $('#chars').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;const i=+b.closest('.card').dataset.i,a=b.dataset.c,C=CH();
  if(a==='del'){C.splice(i,1);if(rChars()&&!C.length){S.rnd.chars=null;if(S.rnd.base==null)S.rnd=null;save();bindAll();renderChars();return}}else if(a==='up'&&i>0)[C[i-1],C[i]]=[C[i],C[i-1]];else if(a==='dn'&&i<C.length-1)[C[i+1],C[i]]=[C[i],C[i+1]];
  else if(a==='on')C[i].on=C[i].on===false;else if(a==='fold')C[i].open=C[i].open===false;
+ else if(a==='sv'){const t=$(`#chars .card[data-i="${i}"] textarea`);if(t)chFrom(t);return}
  else if(a==='tp'||a==='tu'){C[i].tab=a==='tu'?'uc':'p';save();renderChars();const t=$(`#chars .card[data-i="${i}"] textarea`);if(t)t.focus();return}
  save();renderChars()});
 let posI=0;
@@ -1045,7 +1046,7 @@ $('#view').addEventListener('pointerup',e=>{const im=$('#view img');if(!im||vz.p
 
 /* ---------- danbooru popup ---------- */
 const DBU='https://danbooru.donmai.us';
-const dbs={q:null,page:1,posts:[],busy:false,more:false,total:null,gen:0,fromArt:false,in:{p:'',a:'',b:''},bf:'*',tab:'p',acT:0,acN:0,post:null};
+const dbs={hist:[],q:null,page:1,posts:[],busy:false,more:false,total:null,gen:0,fromArt:false,in:{p:'',a:'',b:''},bf:'*',tab:'p',acT:0,acN:0,post:null};
 I.tag='<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>';I.srch='<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>';I.back='<path d="M15 18l-6-6 6-6"/>';I.ext='<path d="M14 4h6v6M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>';
 setIc('#bDb','tag');setIc('#dbGo','srch');setIc('#dbBack','back');setIc('#dbExt','ext');setIc('#dbX','x');
 async function dbJ(p){let r,last;for(let k=0;k<4;k++){if(k)await sleep(350*k);try{r=await fetch(DBU+p,{referrerPolicy:'no-referrer'});if(r.status===403&&r.headers.get('cf-mitigated')){last=r;r=null;continue}break}catch(e){r=null}}
@@ -1055,15 +1056,19 @@ const dbThumb=p=>{const v=((p.media_asset||{}).variants||[]).find(v=>v.type==='3
 function dbImgErr(i){const n=+(i.dataset.r||0);if(n>=3)return;i.dataset.r=n+1;setTimeout(()=>{const u=i.src.split('?')[0];i.src=u+'?r='+(n+1)},400*(n+1))}
 const dbN=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+'k':String(n||0);
 function dbList(){$('#dbPost').classList.add('hide');dbs.post=null;dbBackUI()}
-const dbBackUI=()=>$('#dbBack').classList.toggle('hide',!(dbs.post||dbs.fromArt));
+const dbBackUI=()=>$('#dbBack').classList.toggle('hide',!(dbs.post||dbs.fromArt||dbs.hist.length));
+function dbPush(){if(dbs.tab!=='p'||dbs.q==null||!dbs.posts.length)return;dbs.hist.push({q:dbs.q,page:dbs.page,posts:dbs.posts,more:dbs.more,total:dbs.total,fromArt:dbs.fromArt,inp:$('#dbQ').value,g:$('#dbGrid').innerHTML,r:$('#dbRel').innerHTML,pg:$('#dbPager').innerHTML,st:$('#dbList').scrollTop});if(dbs.hist.length>30)dbs.hist.shift()}
+function dbPop(){const h=dbs.hist.pop();if(!h)return;dbs.gen++;dbs.busy=false;Object.assign(dbs,{q:h.q,page:h.page,posts:h.posts,more:h.more,total:h.total,fromArt:h.fromArt,post:null});
+ $('#dbPost').classList.add('hide');$('#dbAc').classList.add('hide');dbMode('p');$('#dbQ').value=h.inp;$('#dbGrid').innerHTML=h.g;$('#dbRel').innerHTML=h.r;$('#dbPager').innerHTML=h.pg;$('#dbMsg').textContent='';$('#dbList').scrollTop=h.st;dbBackUI()}
 const DPER=30;
 function dbView(art){dbMode(art?'a':'p')}
 function dbSetTab(t){if(t===(dbs.tab||'p'))return;const v=$('#dbQ').value;dbs.in[dbs.tab||'p']=v;$('#dbQ').value=dbs.in[t]||'';dbMenuHide();
- dbs.gen++;dbs.busy=false;dbs.fromArt=false;dbs.post=null;$('#dbPost').classList.add('hide');$('#dbAc').classList.add('hide');$('#dbMsg').textContent='';dbMode(t);if(t==='b')dbBmRender();$('#dbList').scrollTop=0;dbBackUI()}
-function dbArtPosts(name){dbs.in.a=$('#dbQ').value;dbs.gen++;dbs.busy=false;dbView(false);$('#dbQ').value=name;dbs.fromArt='a';dbSearch(name,1)}
+ dbs.gen++;dbs.busy=false;dbs.fromArt=false;dbs.hist=[];dbs.post=null;$('#dbPost').classList.add('hide');$('#dbAc').classList.add('hide');$('#dbMsg').textContent='';dbMode(t);if(t==='b')dbBmRender();$('#dbList').scrollTop=0;dbBackUI()}
+function dbArtPosts(name){dbs.in.a=$('#dbQ').value;dbs.gen++;dbs.busy=false;dbs.hist=[];dbs.noPush=true;dbView(false);$('#dbQ').value=name;dbs.fromArt='a';dbSearch(name,1)}
 $('#dbTabs').onclick=e=>{const b=e.target.closest('[data-dt]');if(b)dbSetTab(b.dataset.dt)};
 function dbNorm(q){q=q.trim().replace(/\s+/g,' ');return /^artist:/i.test(q)?{art:q.slice(7).trim().replace(/\s+/g,'_')}:{q:q.replace(/(^|\s)artist:/gi,'$1')}}
 async function dbSearch(raw,page){if(dbs.busy)return;const n=dbNorm(raw);if(n.art!==undefined){dbSetTab('a');$('#dbQ').value=n.art;return dbArtists(n.art)}
+ if(!dbs.noPush&&!(n.q===dbs.q&&page===dbs.page))dbPush();dbs.noPush=false;
  dbs.busy=true;const q=n.q;$('#dbAc').classList.add('hide');if(q!==dbs.q)dbs.total=null;
  dbs.q=q;dbs.page=page;dbs.posts=[];$('#dbGrid').innerHTML='';$('#dbRel').innerHTML='';$('#dbPager').innerHTML='';$('#dbList').scrollTop=0;dbList();dbView(false);
  $('#dbMsg').textContent='불러오는 중…';const my=++dbs.gen;
@@ -1111,7 +1116,7 @@ function dbAdd(tags){const c=BP().replace(/[\s,]+$/,''),have=new Set(c.split(','
 const dbPostTags=()=>{const p=dbs.post;return p?[[4,p.tag_string_character],[3,p.tag_string_copyright],[0,p.tag_string_general]].flatMap(([k,s])=>(s||'').trim().split(/\s+/).filter(Boolean).map(t=>dbTagTxt(t,k))):[]};
 $('#bDb').onclick=()=>{$('#dbPop').classList.remove('hide');if(!dbs.posts.length&&!dbs.busy)dbSearch($('#dbQ').value,1)};
 $('#dbX').onclick=()=>{$('#dbPop').classList.add('hide');$('#dbAc').classList.add('hide')};
-$('#dbBack').onclick=()=>{if(dbs.post)return dbList();if(dbs.fromArt){const t=dbs.fromArt;dbs.fromArt=false;dbs.gen++;dbs.busy=false;dbs.in.p=$('#dbQ').value;$('#dbQ').value=dbs.in[t]||'';dbMode(t);if(t==='b')dbBmRender();$('#dbMsg').textContent='';$('#dbList').scrollTop=0;dbBackUI()}};
+$('#dbBack').onclick=()=>{if(dbs.post)return dbList();if(dbs.hist.length)return dbPop();if(dbs.fromArt){const t=dbs.fromArt;dbs.fromArt=false;dbs.gen++;dbs.busy=false;dbs.in.p=$('#dbQ').value;$('#dbQ').value=dbs.in[t]||'';dbMode(t);if(t==='b')dbBmRender();$('#dbMsg').textContent='';$('#dbList').scrollTop=0;dbBackUI()}};
 $('#dbGo').onclick=()=>{$('#dbQ').blur();if(dbs.tab==='b')return dbBmRender();dbs.fromArt=false;if(dbs.tab==='a'){const n=$('#dbQ').value.trim().replace(/^artist:/i,'').trim().replace(/\s+/g,'_');if(n)dbArtists(n)}else dbSearch($('#dbQ').value,1)};
 $('#dbQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#dbGo').click()}};
 $('#dbExt').onclick=()=>window.open(dbs.post?`${DBU}/posts/${dbs.post.id}`:`${DBU}/posts?tags=${encodeURIComponent(dbs.q)}`,'danbooru');
@@ -1242,6 +1247,9 @@ let chEditI=-1;
 function renderChunks(){const L=chunks();$('#chList').innerHTML=L.map((c,i)=>`<div class="chk" data-i="${i}"><div class="grow"><b>${esc(c.n||'청크 '+(i+1))}</b><span>${esc(c.t)}</span></div>
   <button class="ic" data-c="ins" title="프롬프트에 넣기">${ic('plus')}</button><button class="ic" data-c="ed" title="수정">${ic('brush')}</button><button class="ic" data-c="del" title="삭제">${ic('trash')}</button></div>`).join('')||'<div class="mut" style="margin-top:8px">청크가 없습니다. + 로 추가하세요.</div>'}
 $('#bChAdd').onclick=()=>{chEditI=-1;$('#chName').value='';$('#chText').value=$('#tPrompt').value.slice($('#tPrompt').selectionStart,$('#tPrompt').selectionEnd);$('#chEdit').classList.remove('hide');$('#chName').focus()};
+function chFrom(t){const s=t.selectionStart!==t.selectionEnd?t.value.slice(t.selectionStart,t.selectionEnd):t.value;if(!s.trim())return toast('비어 있음',1);
+ pTab('C');chEditI=-1;$('#chName').value='';$('#chText').value=s.trim();$('#chEdit').classList.remove('hide');$('#chName').focus()}
+setIc('#bChSave','save');$('#bChSave').onclick=()=>chFrom(ucTab&&S.ucAttach?$('#tUc'):$('#tPrompt'));
 $('#chCancel').onclick=()=>$('#chEdit').classList.add('hide');
 $('#chSave').onclick=()=>{const L=chunks(),c={n:$('#chName').value.trim(),t:$('#chText').value.trim()};if(!c.t)return;if(chEditI>=0)L[chEditI]=c;else L.push(c);LS.nai_chunks=JSON.stringify(L);$('#chEdit').classList.add('hide');renderChunks()};
 $('#chList').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;const i=+b.closest('.chk').dataset.i,L=chunks(),c=L[i];
@@ -1321,10 +1329,22 @@ async function acRun(t){
   const j=await r.json();if(seq!==acSeq||document.activeElement!==t)return;
   acList=(j.tags||[]).slice(0,12);if(!acList.length)return acHide();acTa=t;acR=acTok(t);acI=0;acDraw();
   const an=t.closest('.hl')||t,nx=an.nextElementSibling;(nx&&nx.classList.contains('tb')?nx:an).after(ac);ac.style.display='block';ac.scrollTop=0;
-  const rb=ac.getBoundingClientRect(),fb=$('#foot').getBoundingClientRect().top;if(rb.bottom>fb)ac.scrollIntoView({block:'nearest'});
+  acReveal(t);
  }catch{acHide()}
 }
 let acR=null;
+/* keep the caret on screen (keyboard open, sheet resize, suggestion box) */
+function caretRect(t){const b=t.parentNode&&t.parentNode.classList.contains('hl')&&t.parentNode.firstChild;if(!b)return t.getBoundingClientRect();
+ let n=t.selectionEnd,w=document.createTreeWalker(b,NodeFilter.SHOW_TEXT),x;while((x=w.nextNode())){if(n<=x.length){const r=document.createRange();r.setStart(x,n);r.setEnd(x,Math.min(x.length,n+1));const q=r.getClientRects()[0]||r.getBoundingClientRect();
+  const o=t.scrollTop;return {top:q.top-o,bottom:q.bottom-o}}n-=x.length}return t.getBoundingClientRect()}
+function viewBox(t){const sc=t.closest('#pBody,#left');if(!sc)return null;const r=sc.getBoundingClientRect(),vv=window.visualViewport,vb=vv?vv.offsetTop+vv.height:innerHeight;
+ const pt=$('#ptabs'),top=sc.id==='pBody'&&pt?pt.getBoundingClientRect().bottom:r.top;return {sc,top,bottom:Math.min(r.bottom,vb)}}
+function keepCaret(t){t=t||document.activeElement;if(!t||!t.matches||!t.matches('textarea.pr')||!t.offsetParent)return;const v=viewBox(t);if(!v)return;const c=caretRect(t);
+ if(c.bottom>v.bottom-8)v.sc.scrollTop+=c.bottom-v.bottom+24;else if(c.top<v.top+4)v.sc.scrollTop-=v.top-c.top+24}
+function acReveal(t){const v=viewBox(t);if(!v)return;const d=ac.getBoundingClientRect().bottom-v.bottom+8;if(d<=0)return;const c=caretRect(t);v.sc.scrollTop+=Math.max(0,Math.min(d,c.top-v.top-8))}
+let kcT=0;const kcLater=()=>{clearTimeout(kcT);kcT=setTimeout(()=>keepCaret(),260)};
+addEventListener('resize',kcLater);if(window.visualViewport)visualViewport.addEventListener('resize',kcLater);
+document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('textarea.pr')){kcLater();setTimeout(()=>keepCaret(),600)}});
 function acDraw(){ac.innerHTML=`<div class="ah"><span>혹시 이 태그?</span><button class="ic" data-x title="닫기">${ic('x')}</button></div><div class="ar">${acList.map((t,i)=>`<button class="${i===acI?'on':''}" data-i="${i}" title="${t.count??''}">${esc(t.tag)}<i style="opacity:${Math.min(1,.25+Math.log10((t.count||1))/4).toFixed(2)}"></i></button>`).join('')}</div>`}
 function acPick(i){const t=acTa,k=acR||acTok(t),tag=acList[i].tag;t.setRangeText(tag+', ',k.a,k.b,'end');t.dispatchEvent(new Event('input',{bubbles:true}));acHide();clearTimeout(acT);t.focus({preventScroll:true})}
 document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('textarea.pr')&&e.isTrusted){clearTimeout(acT);acT=setTimeout(()=>acRun(e.target),280)}});
