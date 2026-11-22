@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json?v=2">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611230321">
+<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611230325">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -644,7 +644,8 @@ $('#pBody').addEventListener('touchend',()=>{if(!sw||sw.lock!=='h'){sw=null;retu
  slideTo(s.el,dx<0?-W:W,160,()=>{clearSlide(s.el);pTab(TABS[n]);const ne=$(TEL[TABS[n]]);slideTo(ne,dx<0?W*.6:-W*.6,0);
   void ne.offsetWidth;setTimeout(()=>slideTo(ne,0,220,()=>clearSlide(ne)),16)})},{passive:true});
 $('#pBody').addEventListener('touchcancel',()=>{const el=sw&&sw.el;sw=null;if(el)slideTo(el,0,200,()=>clearSlide(el))},{passive:true});
-$$('.modal').forEach(m=>m.addEventListener('pointerdown',e=>{if(e.target===m||e.target.closest('[data-close]'))m.classList.remove('on')}));
+const eatClick=()=>{const f=e=>{e.stopPropagation();e.preventDefault()};document.addEventListener('click',f,true);setTimeout(()=>document.removeEventListener('click',f,true),450)};
+$$('.modal').forEach(m=>m.addEventListener('pointerdown',e=>{if(e.target===m||e.target.closest('[data-close]')){m.classList.remove('on');eatClick()}}));
 const open=id=>$(id).classList.add('on'), close=id=>$(id).classList.remove('on');
 /* mobile: overlays + bottom sheet */
 const closePanels=()=>$$('#sPanel,#hist').forEach(p=>p.classList.remove('open'));
