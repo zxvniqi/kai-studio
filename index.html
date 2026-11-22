@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json?v=2">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611211927">
+<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611230308">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -90,6 +90,9 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 #dbMenu .mrow{display:flex;gap:6px;padding:8px;width:240px}
 .dbT .dm{padding:4px 6px!important;display:grid;place-items:center;color:var(--mut)!important}.dbT .dm svg{width:16px;height:16px}
 .dbA .dm{color:var(--mut)}
+.dbG{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:10px 2px}
+.dbG svg{width:16px;height:16px;flex:none;color:var(--mut)}
+.dbGT{font-weight:700;font-size:15px;margin:4px 0 6px}
 .dbFold{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.dbFold .chip{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;font-size:13px}.dbFold .chip svg{width:14px;height:14px}.dbFold em{font-style:normal;opacity:.7;margin-left:2px}
 #dbTabs{flex:none;background:var(--p1);padding:0 8px}#dbTabs button{flex:1;padding:9px 12px}
 #dbQw{flex:1;min-width:0;position:relative}
@@ -335,6 +338,7 @@ body.med .adv{display:none!important}
 <main id="stage">
  <div id="bar"><span id="info"></span>
   <button class="ic" data-a="enh" title="Enhance"></button>
+  <button class="ic" data-a="var" title="Variations (비슷한 그림 3장)"></button>
   <button class="ic" data-a="up" title="업스케일 4x"></button>
   <button class="ic" data-a="i2i" title="기본 이미지로 사용 (이미지→이미지)"></button>
   <button class="ic" data-a="paint" title="이미지 위에 그리기"></button>
@@ -357,8 +361,8 @@ body.med .adv{display:none!important}
 
 <div id="dbPop" class="hide">
  <div id="dbHead"><button class="ic hide" id="dbBack" title="목록으로"></button><div id="dbQw"><input type="text" id="dbQ" placeholder="단부루 태그 검색" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"><div id="dbAc" class="hide"></div></div><button class="ic" id="dbGo" title="검색"></button><button class="ic" id="dbExt" title="단부루 사이트로 열기"></button><button class="ic" id="dbX" title="닫기"></button></div>
- <div id="dbTabs" class="tabs"><button class="on" data-dt="p">그림</button><button data-dt="a">작가</button><button data-dt="b">북마크</button></div>
- <div id="dbBody"><div id="dbList"><div id="dbArt" class="hide"></div><div id="dbGrid"></div><div id="dbMsg" class="mut"></div><div id="dbPager"></div><div id="dbRel"></div><div id="dbBm" class="hide"></div></div><div id="dbMenu" class="hide"></div><div id="dbPost" class="hide"></div></div>
+ <div id="dbTabs" class="tabs"><button class="on" data-dt="p">그림</button><button data-dt="a">작가</button><button data-dt="g">그룹</button><button data-dt="b">북마크</button></div>
+ <div id="dbBody"><div id="dbList"><div id="dbArt" class="hide"></div><div id="dbGrid"></div><div id="dbMsg" class="mut"></div><div id="dbPager"></div><div id="dbRel"></div><div id="dbBm" class="hide"></div><div id="dbGrp" class="hide"></div></div><div id="dbMenu" class="hide"></div><div id="dbPost" class="hide"></div></div>
 </div>
 <div class="modal" id="mSet"><div class="box">
  <h3><span>앱 설정</span><button class="ic" data-close></button></h3>
@@ -521,7 +525,8 @@ const setIc=(sel,n)=>$$(sel).forEach(e=>e.innerHTML=ic(n));
 setIc('#bSet','menu');setIc('#bGear','sliders');setIc('#bHist','clock');setIc('#bPreset','book');setIc('#bAddBase,#bAddVibe,#bAddRef','upl');$$('.ri[data-ic]').forEach(e=>e.innerHTML=ic(e.dataset.ic));setIc('#bAddCh','plus');
 setIc('[data-close],[data-pclose],#bDelBase,#bSeedX','x');setIc('#bSwap','swap');setIc('#bMask,#mkDraw','brush');setIc('#mkErase','erase');setIc('#mkClear','trash');setIc('#mkX','x');I.det='<rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 15v4a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-4"/>';I.att='<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h18"/>';setIc('#bDetach','det');setIc('#bReatt','att');setIc('#bChAdd','plus');setIc('#hZip','save');setIc('#hClr','trash');setIc('#bAiReset','load');setIc('#bDelBase','trash');setIc('#bPaint,#bPaintNew','brush');setIc('#bRepl','upl');setIc('#mkDl','save');setIc('#mkMoreB','more');setIc('#mkPalB','pal');setIc('#mkUndo','undo');setIc('#mkRedo','redo');
 setIc('#bLoop','loop');setIc('#bRndX','x');setIc('#bRndRe','load');setIc('#bDice','dice');setIc('#bBig','big');setIc('#bPos','grid');setIc('#bSeedLast','seed');$('#sumA').innerHTML=ic('au');
-$$('#bar > [data-a]').forEach(b=>b.innerHTML=ic({save:'save',copy:'copy',i2i:'wand',paint:'brush',up:'up',enh:'spark',more:'more'}[b.dataset.a]));
+I.vari='<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M17.5 14v7M14 17.5h7"/>';
+$$('#bar > [data-a]').forEach(b=>b.innerHTML=ic({save:'save',copy:'copy',i2i:'wand',paint:'brush',up:'up',enh:'spark',more:'more',var:'vari'}[b.dataset.a]));
 opts($('#model'),MODELS.map(m=>[m.id,m.name]));
 const RZ={n:{P:[832,1216],L:[1216,832],S:[1024,1024]},l:{P:[1024,1536],L:[1536,1024],S:[1472,1472]},w:{P:[1088,1920],L:[1920,1088]},s:{P:[512,768],L:[768,512],S:[640,640]}};
 function rzNow(){for(const z in RZ)for(const o in RZ[z]){const [w,h]=RZ[z][o];if(w===S.w&&h===S.h)return [z,o]}return ['c',S.w>S.h?'L':S.w<S.h?'P':'S']}
@@ -946,6 +951,20 @@ async function generate(){
  finally{busy=false;stopReq=false;spin('');refresh();refreshAnlas()}
 }
 $('#gen').onclick=generate;
+/* Variations: same as NAI — img2img of the picked image with its own settings, strength .8, noise .1, random seed, 3 samples */
+async function genVar(it){if(busy)return;if(!tok)return open('#mSet');
+ busy=true;stopReq=false;refresh();ctl=new AbortController;spinT0=0;spin('변형 생성 중…');
+ const keepS=S,keepB=base;let body,o,seed=Math.floor(Math.random()*4294967295);
+ try{const img=await loadImg(it.url),W=img.naturalWidth,H=img.naturalHeight;
+  o=it.meta.snap?JSON.parse(it.meta.snap):JSON.parse(JSON.stringify(S));
+  Object.assign(o,{w:W,h:H,n:Math.min(3,[[3145728,4],[1572864,4],[1310720,4],[524288,4],[409600,6],[360448,8],[262144,8],[245760,8]].reduce((n,[a,c])=>W*H<=a?c:n,0)||1),strength:.8,noise:.1});
+  if(!MODELS.some(m=>m.id===o.model))o.model=S.model;
+  try{S=o;base={img,url:it.url,mask:null};body=await buildPayload(seed)}finally{S=keepS;base=keepB}
+  const blobs=await runGen(body),mn=(MODELS.find(m=>m.id===o.model)||model()).name;let first=null;
+  for(let i=0;i<blobs.length;i++){const n=await addItem(blobs[i],{seed:seed+i,w:W,h:H,model:mn+' · 변형',snap:JSON.stringify(Object.assign({},o,{n:keepS.n,strength:keepS.strength,noise:keepS.noise}))},it.blob);first=first||n;if(S.autosave)dl(n)}
+  if(first)show(first)}
+ catch(e){if(e.name!=='AbortError')toast(e.message,1)}
+ finally{busy=false;spin('');refresh();refreshAnlas()}}
 
 /* ---------- history ---------- */
 function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('nai_studio',2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('imgs'))d.createObjectStore('imgs',{keyPath:'id',autoIncrement:true});if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
@@ -965,6 +984,7 @@ $('#bar').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b||!cur)ret
  try{
   if(a==='paint'){await setBase(it.blob);pTab('R');mkOpen('paint');return}
   if(a==='enh'){openEnh();return}
+  if(a==='var'){genVar(it);return}
   if(a==='dir'){openDir();return}
   if(a==='save')dl(it);
   else if(a==='copy'){await navigator.clipboard.write([new ClipboardItem({'image/png':it.blob})]);toast('복사됨')}
@@ -1057,7 +1077,7 @@ $('#view').addEventListener('pointerup',e=>{const im=$('#view img');if(!im||vz.p
 
 /* ---------- danbooru popup ---------- */
 const DBU='https://danbooru.donmai.us';
-const dbs={hist:[],q:null,page:1,posts:[],busy:false,more:false,total:null,gen:0,fromArt:false,in:{p:'',a:'',b:''},bf:'*',tab:'p',acT:0,acN:0,post:null};
+const dbs={gst:[],gcur:null,gc:{},hist:[],q:null,page:1,posts:[],busy:false,more:false,total:null,gen:0,fromArt:false,in:{p:'',a:'',b:''},bf:'*',tab:'p',acT:0,acN:0,post:null};
 I.tag='<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>';I.srch='<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/>';I.back='<path d="M15 18l-6-6 6-6"/>';I.ext='<path d="M14 4h6v6M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>';
 setIc('#bDb','tag');setIc('#dbGo','srch');setIc('#dbBack','back');setIc('#dbExt','ext');setIc('#dbX','x');
 async function dbJ(p){let r,last;for(let k=0;k<4;k++){if(k)await sleep(350*k);try{r=await fetch(DBU+p,{referrerPolicy:'no-referrer'});if(r.status===403&&r.headers.get('cf-mitigated')){last=r;r=null;continue}break}catch(e){r=null}}
@@ -1067,14 +1087,34 @@ const dbThumb=p=>{const v=((p.media_asset||{}).variants||[]).find(v=>v.type==='3
 function dbImgErr(i){const n=+(i.dataset.r||0);if(n>=3)return;i.dataset.r=n+1;setTimeout(()=>{const u=i.src.split('?')[0];i.src=u+'?r='+(n+1)},400*(n+1))}
 const dbN=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+'k':String(n||0);
 function dbList(){$('#dbPost').classList.add('hide');dbs.post=null;dbBackUI()}
-const dbBackUI=()=>$('#dbBack').classList.toggle('hide',!(dbs.post||dbs.fromArt||dbs.hist.length));
+const dbBackUI=()=>$('#dbBack').classList.toggle('hide',!(dbs.post||dbs.fromArt||dbs.hist.length||(dbs.tab==='g'&&dbs.gst.length)));
+/* tag groups (danbooru wiki "tag_group:*" pages) */
+const dbGN=s=>s.trim().toLowerCase().replace(/\s+/g,'_');
+async function dbGrpOpen(title,noPush,st){if(!noPush&&dbs.gcur&&dbs.gcur!==title){dbs.gst.push({t:dbs.gcur,st:$('#dbList').scrollTop});if(dbs.gst.length>30)dbs.gst.shift()}
+ dbs.gcur=title;dbBackUI();$('#dbQ').value='';const my=++dbs.gen;let d=dbs.gc[title];
+ if(!d){$('#dbGrp').innerHTML='';$('#dbMsg').textContent='불러오는 중…';
+  try{const w=await dbJ(`/wiki_pages/${encodeURIComponent(title)}.json`);if(my!==dbs.gen)return;const secs=[{h:'',it:[]}];let skip=false;
+   for(const ln of String(w.body||'').split(/\r?\n/)){if(/\[expand/i.test(ln))skip=true;if(skip){if(/\[\/expand\]/i.test(ln))skip=false;continue}
+    const h=ln.match(/^h[1-6](?:#[\w-]+)?\.\s*(.+)$/);if(h){secs.push({h:h[1].replace(/\[\[([^\]|]*)\|?([^\]]*)\]\]/g,(_,a,b)=>b||a).trim(),it:[]});continue}
+    for(const m of ln.matchAll(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g)){const n=dbGN(m[1]);if(n===dbGN(title))continue;const S2=secs[secs.length-1];
+     if(/^(tag_group:|list_of_)/.test(n)||n==='tag_groups')S2.it.push({g:n,l:m[1].trim()});else if(!S2.it.some(x=>x.t===n))S2.it.push({t:n})}}
+   const names=[...new Set(secs.flatMap(s=>s.it.filter(x=>x.t).map(x=>x.t)))],M=new Map();
+   for(let i=0;i<names.length;i+=100){const T=await dbJ(`/tags.json?search[name_comma]=${encodeURIComponent(names.slice(i,i+100).join(','))}&only=name,post_count,category&limit=1000`);if(my!==dbs.gen)return;T.forEach(t=>M.set(t.name,t))}
+   d={title,secs:secs.map(s=>({h:s.h,it:s.it.filter(x=>x.g||(M.has(x.t)&&M.get(x.t).post_count>0))})).filter(s=>s.it.length),M};dbs.gc[title]=d}
+  catch(e){if(my!==dbs.gen)return;$('#dbMsg').textContent=e.message;return}}
+ $('#dbMsg').textContent='';dbGrpRender();$('#dbList').scrollTop=st||0}
+function dbGrpRender(){const d=dbs.gc[dbs.gcur];if(!d)return;const f=$('#dbQ').value.trim().toLowerCase().replace(/\s+/g,'_');
+ const h=d.secs.map(s=>{const it=s.it.filter(x=>!f||(x.g||x.t).includes(f));if(!it.length)return '';const gs=it.filter(x=>x.g),ts=it.filter(x=>x.t);
+  return `<div class="dbCat">${s.h?`<b>${esc(s.h)}</b>`:''}${gs.map(x=>`<button class="dbG" data-g="${esc(x.g)}">${ic('folder')}<span>${esc(x.l.replace(/^tag group:/i,''))}</span></button>`).join('')}${ts.length?`<div class="dbTags">${ts.map(x=>{const t=d.M.get(x.t);return dbChip(x.t,t.category,t.post_count)}).join('')}</div>`:''}</div>`}).join('');
+ $('#dbGrp').innerHTML=`<div class="dbGT">${esc(d.title.replace(/^tag_group:/,'').replace(/_/g,' '))}</div>`+(h||'<div class="mut" style="text-align:center;padding:24px">결과 없음</div>')}
+$('#dbGrp').onclick=e=>{const g=e.target.closest('[data-g]'),s=e.target.closest('[data-s]');if(g)dbGrpOpen(g.dataset.g);else if(s){const q=s.dataset.s;dbSetTab('p');$('#dbQ').value=q;dbSearch(q,1)}};
 function dbPush(){if(dbs.tab!=='p'||dbs.q==null||!dbs.posts.length)return;dbs.hist.push({q:dbs.q,page:dbs.page,posts:dbs.posts,more:dbs.more,total:dbs.total,fromArt:dbs.fromArt,inp:$('#dbQ').value,g:$('#dbGrid').innerHTML,r:$('#dbRel').innerHTML,pg:$('#dbPager').innerHTML,st:$('#dbList').scrollTop});if(dbs.hist.length>30)dbs.hist.shift()}
 function dbPop(){const h=dbs.hist.pop();if(!h)return;dbs.gen++;dbs.busy=false;Object.assign(dbs,{q:h.q,page:h.page,posts:h.posts,more:h.more,total:h.total,fromArt:h.fromArt,post:null});
  $('#dbPost').classList.add('hide');$('#dbAc').classList.add('hide');dbMode('p');$('#dbQ').value=h.inp;$('#dbGrid').innerHTML=h.g;$('#dbRel').innerHTML=h.r;$('#dbPager').innerHTML=h.pg;$('#dbMsg').textContent='';$('#dbList').scrollTop=h.st;dbBackUI()}
 const DPER=30;
 function dbView(art){dbMode(art?'a':'p')}
 function dbSetTab(t){if(t===(dbs.tab||'p'))return;const v=$('#dbQ').value;dbs.in[dbs.tab||'p']=v;$('#dbQ').value=dbs.in[t]||'';dbMenuHide();
- dbs.gen++;dbs.busy=false;dbs.fromArt=false;dbs.hist=[];dbs.post=null;$('#dbPost').classList.add('hide');$('#dbAc').classList.add('hide');$('#dbMsg').textContent='';dbMode(t);if(t==='b')dbBmRender();$('#dbList').scrollTop=0;dbBackUI()}
+ dbs.gen++;dbs.busy=false;dbs.fromArt=false;dbs.hist=[];dbs.post=null;$('#dbPost').classList.add('hide');$('#dbAc').classList.add('hide');$('#dbMsg').textContent='';dbMode(t);if(t==='b')dbBmRender();if(t==='g')dbGrpOpen(dbs.gcur||'tag_groups',true);$('#dbList').scrollTop=0;dbBackUI()}
 function dbArtPosts(name){dbs.in.a=$('#dbQ').value;dbs.gen++;dbs.busy=false;dbs.hist=[];dbs.noPush=true;dbView(false);$('#dbQ').value=name;dbs.fromArt='a';dbSearch(name,1)}
 $('#dbTabs').onclick=e=>{const b=e.target.closest('[data-dt]');if(b)dbSetTab(b.dataset.dt)};
 function dbNorm(q){q=q.trim().replace(/\s+/g,' ');return /^artist:/i.test(q)?{art:q.slice(7).trim().replace(/\s+/g,'_')}:{q:q.replace(/(^|\s)artist:/gi,'$1')}}
@@ -1127,12 +1167,12 @@ function dbAdd(tags){const c=BP().replace(/[\s,]+$/,''),have=new Set(c.split(','
 const dbPostTags=()=>{const p=dbs.post;return p?[[4,p.tag_string_character],[3,p.tag_string_copyright],[0,p.tag_string_general]].flatMap(([k,s])=>(s||'').trim().split(/\s+/).filter(Boolean).map(t=>dbTagTxt(t,k))):[]};
 $('#bDb').onclick=()=>{$('#dbPop').classList.remove('hide');if(!dbs.posts.length&&!dbs.busy)dbSearch($('#dbQ').value,1)};
 $('#dbX').onclick=()=>{$('#dbPop').classList.add('hide');$('#dbAc').classList.add('hide')};
-$('#dbBack').onclick=()=>{if(dbs.post)return dbList();if(dbs.hist.length)return dbPop();if(dbs.fromArt){const t=dbs.fromArt;dbs.fromArt=false;dbs.gen++;dbs.busy=false;dbs.in.p=$('#dbQ').value;$('#dbQ').value=dbs.in[t]||'';dbMode(t);if(t==='b')dbBmRender();$('#dbMsg').textContent='';$('#dbList').scrollTop=0;dbBackUI()}};
-$('#dbGo').onclick=()=>{$('#dbQ').blur();if(dbs.tab==='b')return dbBmRender();dbs.fromArt=false;if(dbs.tab==='a'){const n=$('#dbQ').value.trim().replace(/^artist:/i,'').trim().replace(/\s+/g,'_');if(n)dbArtists(n)}else dbSearch($('#dbQ').value,1)};
+$('#dbBack').onclick=()=>{if(dbs.post)return dbList();if(dbs.tab==='g'&&dbs.gst.length){const p=dbs.gst.pop();return dbGrpOpen(p.t,true,p.st)}if(dbs.hist.length)return dbPop();if(dbs.fromArt){const t=dbs.fromArt;dbs.fromArt=false;dbs.gen++;dbs.busy=false;dbs.in.p=$('#dbQ').value;$('#dbQ').value=dbs.in[t]||'';dbMode(t);if(t==='b')dbBmRender();$('#dbMsg').textContent='';$('#dbList').scrollTop=0;dbBackUI()}};
+$('#dbGo').onclick=()=>{$('#dbQ').blur();if(dbs.tab==='b')return dbBmRender();if(dbs.tab==='g')return dbGrpRender();dbs.fromArt=false;if(dbs.tab==='a'){const n=$('#dbQ').value.trim().replace(/^artist:/i,'').trim().replace(/\s+/g,'_');if(n)dbArtists(n)}else dbSearch($('#dbQ').value,1)};
 $('#dbQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#dbGo').click()}};
 $('#dbExt').onclick=()=>window.open(dbs.post?`${DBU}/posts/${dbs.post.id}`:`${DBU}/posts?tags=${encodeURIComponent(dbs.q)}`,'danbooru');
 
-$('#dbQ').oninput=()=>{clearTimeout(dbs.acT);if(dbs.tab==='b'){$('#dbAc').classList.add('hide');return dbBmRender()}const v=$('#dbQ').value,last=v.split(' ').pop(),whole=dbs.tab==='a'||/^artist:/i.test(v),art=whole||/^artist:/i.test(last),w=whole?v.trim().replace(/^artist:/i,'').trim().replace(/\s+/g,'_'):last.replace(/^artist:/i,'');if(w.length<(art?1:2)){$('#dbAc').classList.add('hide');return}
+$('#dbQ').oninput=()=>{clearTimeout(dbs.acT);if(dbs.tab==='b'){$('#dbAc').classList.add('hide');return dbBmRender()}if(dbs.tab==='g'){$('#dbAc').classList.add('hide');return dbGrpRender()}const v=$('#dbQ').value,last=v.split(' ').pop(),whole=dbs.tab==='a'||/^artist:/i.test(v),art=whole||/^artist:/i.test(last),w=whole?v.trim().replace(/^artist:/i,'').trim().replace(/\s+/g,'_'):last.replace(/^artist:/i,'');if(w.length<(art?1:2)){$('#dbAc').classList.add('hide');return}
  dbs.acT=setTimeout(async()=>{const n=++dbs.acN;try{const L=art?(await dbJ(`/tags.json?search[name_matches]=${encodeURIComponent('*'+w+'*')}&search[category]=1&search[hide_empty]=true&search[order]=count&limit=10`)).map(t=>({value:t.name,label:t.name.replace(/_/g,' '),category:1,post_count:t.post_count})):await dbJ(`/autocomplete.json?search[query]=${encodeURIComponent(w)}&search[type]=tag_query&limit=10`);if(n!==dbs.acN)return;
   $('#dbAc').innerHTML=L.map(t=>`<button data-v="${esc(t.value)}" class="c${t.category??0}">${esc((t.antecedent?t.antecedent.replace(/_/g,' ')+' → ':'')+t.label)}<em>${dbN(t.post_count)}</em></button>`).join('');$('#dbAc').classList.toggle('hide',!L.length)}catch{}},250)};
 $('#dbAc').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;if(dbs.tab==='a'){$('#dbAc').classList.add('hide');$('#dbQ').blur();return dbArtPosts(b.dataset.v)}const v0=$('#dbQ').value,a=/^artist:/i.test(v0)?[]:v0.split(' ');if(a.length)a[a.length-1]=b.dataset.v;else a.push(b.dataset.v);const q=a.join(' ');$('#dbQ').value=q;$('#dbQ').blur();dbs.fromArt=false;dbSearch(q,1)};
@@ -1147,8 +1187,8 @@ $('#dbPost').onclick=e=>{const a=e.target.closest('[data-add]'),s=e.target.close
 I.star='<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2-5.5-2.9-5.5 2.9 1-6.2L3 9.6l6.2-.9z"/>';I.folder='<path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>';I.edit='<path d="M4 20h4L19 9l-4-4L4 16z"/>';
 const dbChip=(n,c,cnt)=>{const v=dbTagTxt(n,c),have=new Set(BP().split(',').map(s=>s.trim().toLowerCase()));
  return `<span class="dbT c${c}${have.has(v.toLowerCase())?' on':''}"><button data-s="${esc(n)}" data-c="${c}">${esc(n.replace(/_/g,' '))}${cnt!=null?`<em>${dbN(cnt)}</em>`:''}</button><button class="dm" data-m="${esc(n)}" data-c="${c}" title="메뉴">${ic('more')}</button></span>`};
-function dbMode(m){dbs.tab=m;$('#dbArt').classList.toggle('hide',m!=='a');['#dbGrid','#dbPager','#dbRel'].forEach(s=>$(s).classList.toggle('hide',m!=='p'));$('#dbBm').classList.toggle('hide',m!=='b');
- $$('#dbTabs [data-dt]').forEach(b=>b.classList.toggle('on',b.dataset.dt===m));$('#dbQ').placeholder={p:'단부루 태그 검색',a:'작가 이름 검색',b:'북마크에서 찾기'}[m]}
+function dbMode(m){dbs.tab=m;$('#dbGrp').classList.toggle('hide',m!=='g');$('#dbArt').classList.toggle('hide',m!=='a');['#dbGrid','#dbPager','#dbRel'].forEach(s=>$(s).classList.toggle('hide',m!=='p'));$('#dbBm').classList.toggle('hide',m!=='b');
+ $$('#dbTabs [data-dt]').forEach(b=>b.classList.toggle('on',b.dataset.dt===m));$('#dbQ').placeholder={p:'단부루 태그 검색',a:'작가 이름 검색',b:'북마크에서 찾기',g:'그룹에서 찾기'}[m]}
 const BMget=()=>{let b=null;try{b=JSON.parse(LS.nai_dbbm||'null')}catch{}if(!b||!Array.isArray(b.f)||!Array.isArray(b.i))b={f:['기본'],i:[]};if(!b.f.length)b.f=['기본'];return b};
 const BMset=b=>{LS.nai_dbbm=JSON.stringify(b);if(dbs.tab==='b')dbBmRender()};
 const MI=(c,t,i,x)=>`<button data-mc="${c}"${x||''}>${i?ic(i):''}<span>${esc(t)}</span></button>`;
