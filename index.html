@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json?v=2">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611230308">
+<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611230321">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -143,6 +143,8 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 @keyframes r{to{transform:rotate(1turn)}}
 #histG img{width:100%;border-radius:4px;cursor:pointer;border:2px solid transparent;display:block}
 #histG img.on{border-color:var(--acc)}
+#hist.pick #histG img{border-color:var(--acc);border-style:dashed}
+#hMeta.on{background:var(--acc);color:#13152c}
 .modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:20;padding:12px}
 .modal.on{display:grid}
 .box{background:var(--p1);border:1px solid var(--line);border-radius:8px;padding:16px;width:min(420px,100%);max-height:100%;overflow:auto}
@@ -178,6 +180,9 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 #bOld{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:3;border-radius:16px;padding:7px 14px;font-weight:700;font-size:13px;background:#22253fe6;border:1px solid var(--line);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #bOld.on{background:var(--acc);color:#13152c}
 #bar{position:relative}
+#bar button{position:relative}
+#bar em.bc{position:absolute;right:-3px;bottom:-4px;font-style:normal;font-size:10px;line-height:1;padding:2px 3px;border-radius:6px;background:#13152c;color:var(--acc);pointer-events:none}
+#bar em.bc:empty{display:none}
 #barMenu{position:fixed;z-index:30;background:var(--p2);border:1px solid var(--line);border-radius:6px;display:flex;flex-direction:column;min-width:160px;overflow:hidden}
 #barMenu button{background:none;border-radius:0;text-align:left;padding:10px 14px}
 #barMenu button+button{border-top:1px solid var(--line)}
@@ -353,7 +358,7 @@ body.med .adv{display:none!important}
  <div id="spin"><div><i></i><span id="spinT"></span></div></div>
 </main>
 <aside id="hist"><div class="phead"><span>기록</span><button class="ic" data-pclose></button></div><div id="histG"></div>
- <div id="histBar"><button class="ic" id="hZip" title="전체 ZIP으로 저장"></button><button class="ic" id="hClr" title="전체 삭제"></button><span class="sp"></span><span class="mut" id="hCnt"></span></div></aside>
+ <div id="histBar"><button class="ic" id="hMeta" title="메타데이터 불러오기 (누르고 이미지 선택)"></button><button class="ic" id="hZip" title="전체 ZIP으로 저장"></button><button class="ic" id="hClr" title="전체 삭제"></button><span class="sp"></span><span class="mut" id="hCnt"></span></div></aside>
 
 <footer id="foot"><button class="ic" id="bGear" title="설정"></button><button id="gen"><span id="genT">생성</span><em id="cost"></em></button>
  <button class="ic" id="bLoop" title="연속 생성"></button><button class="ic" id="bHist" title="기록"></button></footer>
@@ -579,17 +584,21 @@ function refresh(){
  $('#cost').textContent=costText();v5Quota();tbAll();
  $('#gen').classList.toggle('busy',busy);
  $('#genT').textContent=busy?(stopReq?'중지 중… (다시 누르면 취소)':(S.loop?'중지':'취소')):`${S.n}장 생성`;
- $$('#bar button').forEach(b=>b.disabled=!cur);$('#bSeedLast').disabled=!cur;
+ $$('#bar button').forEach(b=>b.disabled=!cur);barCost();$('#bSeedLast').disabled=!cur;
 }
+/* NAI price: o={w,h,steps,n,str,gen,md,sm,dyn,noFree} -> Anlas (null = not allowed) */
+function nPrice(o){const px=o.w*o.h;let m=o.md?(2.951823174884865e-6*px+5.753298233447344e-7*px*23)/1.75:Math.ceil(2.951823174884865e-6*px+5.753298233447344e-7*px*o.steps);
+ m*=o.sm&&o.dyn?1.4:o.sm?1.2:1;if(o.gen>=5)m*=1.5;const g=Math.max(Math.ceil(m*(o.str??1)),2);if(g>140)return null;
+ const free=!o.noFree&&opus&&(o.md?14:o.steps)<=28&&px<=1048576&&!(o.gen>=5&&usage&&usage.isNegative);return g*Math.max(0,o.n-(free?1:0))}
+const snapOpt=s=>{const m=MODELS.find(x=>x.id===s.model)||model(),md=s.model==='nai-diffusion-5-full'&&s.effort==='medium';return {steps:md?14:(s.steps||28),gen:m.gen,md,sm:m.gen===3&&!!s.sm,dyn:!!s.dyn}};
+const itSnap=it=>{try{return it&&it.meta.snap?JSON.parse(it.meta.snap):S}catch{return S}};
 function costText(){
- const m=model(),r=S.w*S.h,st=medium()?14:S.steps,free=opus&&st<=28&&r<=1048576;
- let extra=0;if(m.gen!==5){if(m.gen>=4)extra+=vibes.filter(v=>!v.enc[m.id+'|'+v.info]).length*2;if(m.gen===4.5)extra+=refs.length*5}
- if(m.gen>=5)return free&&S.n===1&&!base?'0 Anlas':'';
- let per=Math.ceil(2.951823174884865e-6*r+5.753298233447344e-7*r*st);
- if(m.gen===3&&S.sm)per=Math.ceil(per*(S.dyn?1.4:1.2));
- if(base)per=Math.max(Math.ceil(per*S.strength),2);
- return '≈ '+(per*(S.n-(free?1:0))+extra)+' Anlas';
+ const m=model();let extra=0;if(m.gen!==5){if(m.gen>=4)extra+=vibes.filter(v=>!v.enc[m.id+'|'+v.info]).length*2;if(m.gen===4.5)extra+=refs.length*5*S.n}
+ const v=nPrice(Object.assign(snapOpt(S),{w:S.w,h:S.h,n:S.n,str:base?S.strength:1}));return v==null?'':(v+extra)+' Anlas';
 }
+const upPrice=(w,h)=>w*h>1048576?null:[[1048576,1],[1747627,2],[2446678,3],[3145728,4]].find(([a])=>w*h<=a)[1];
+function barCost(){const it=cur,set=(a,v)=>{const b=$(`#bar [data-a="${a}"]`);if(!b)return;let e=b.querySelector('em.bc');if(!e){e=document.createElement('em');e.className='bc';b.append(e)}e.textContent=v==null?'':v}
+ if(!it)return;const s=itSnap(it),W=it.meta.w,H=it.meta.h;set('var',nPrice(Object.assign(snapOpt(s),{w:W,h:H,n:3,str:.8})));set('up',upPrice(W,H))}
 document.addEventListener('input',e=>{
  const el=e.target,d=el.dataset||{};
  if(d.imp){S.imp[d.imp]=el.checked;save();return}
@@ -971,7 +980,9 @@ function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('nai_studio
 const tx=(mode,fn)=>new Promise((res,rej)=>{if(!db)return res();const t=db.transaction('imgs',mode),q=fn(t.objectStore('imgs'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)});
 async function addItem(blob,meta,orig){const it={blob,meta,t:Date.now()};if(orig)it.orig=orig;try{it.id=await tx('readwrite',s=>s.add(it))}catch{}if(it.id==null)it.id='m'+Date.now()+Math.random();it.url=URL.createObjectURL(blob);items.unshift(it);renderHist();return it}
 function renderHist(){$('#hCnt').textContent=items.length?items.length+'장':'';$('#histG').innerHTML=items.slice(0,300).map(it=>`<img loading="lazy" data-id="${it.id}" src="${it.url}" class="${cur===it?'on':''}">`).join('')||'<div class="mut">아직 없음</div>'}
-$('#histG').onclick=e=>{const id=e.target.dataset.id;if(id){show(items.find(i=>String(i.id)===id));closePanels()}};
+$('#histG').onclick=e=>{const id=e.target.dataset.id;if(!id)return;const it=items.find(i=>String(i.id)===id);if($('#hMeta').classList.contains('on')){$('#hMeta').classList.remove('on');$('#hist').classList.remove('pick');if(it)gotImage(it.blob);return}show(it);closePanels()};
+I.meta='<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>';setIc('#hMeta','meta');
+$('#hMeta').onclick=()=>{const on=$('#hMeta').classList.toggle('on');$('#hist').classList.toggle('pick',on)};
 function show(it){cur=it||null;const v=$('#view');v.classList.remove('zoom');vz.s=1;vz.tx=vz.ty=0;
  if(!cur){v.innerHTML='<div id="empty">이미지가 여기에 표시됩니다</div>';$('#info').textContent=''}
  $('#bOld').classList.toggle('hide',!(cur&&cur.orig));
@@ -1107,7 +1118,7 @@ function dbGrpRender(){const d=dbs.gc[dbs.gcur];if(!d)return;const f=$('#dbQ').v
  const h=d.secs.map(s=>{const it=s.it.filter(x=>!f||(x.g||x.t).includes(f));if(!it.length)return '';const gs=it.filter(x=>x.g),ts=it.filter(x=>x.t);
   return `<div class="dbCat">${s.h?`<b>${esc(s.h)}</b>`:''}${gs.map(x=>`<button class="dbG" data-g="${esc(x.g)}">${ic('folder')}<span>${esc(x.l.replace(/^tag group:/i,''))}</span></button>`).join('')}${ts.length?`<div class="dbTags">${ts.map(x=>{const t=d.M.get(x.t);return dbChip(x.t,t.category,t.post_count)}).join('')}</div>`:''}</div>`}).join('');
  $('#dbGrp').innerHTML=`<div class="dbGT">${esc(d.title.replace(/^tag_group:/,'').replace(/_/g,' '))}</div>`+(h||'<div class="mut" style="text-align:center;padding:24px">결과 없음</div>')}
-$('#dbGrp').onclick=e=>{const g=e.target.closest('[data-g]'),s=e.target.closest('[data-s]');if(g)dbGrpOpen(g.dataset.g);else if(s){const q=s.dataset.s;dbSetTab('p');$('#dbQ').value=q;dbSearch(q,1)}};
+$('#dbGrp').onclick=e=>{const g=e.target.closest('[data-g]'),s=e.target.closest('[data-s]');if(g)dbGrpOpen(g.dataset.g);else if(s){const q=s.dataset.s;dbs.in.g=$('#dbQ').value;dbs.gScroll=$('#dbList').scrollTop;dbs.gen++;dbs.busy=false;dbs.hist=[];dbs.noPush=true;dbMode('p');$('#dbQ').value=q;dbs.fromArt='g';dbSearch(q,1)}};
 function dbPush(){if(dbs.tab!=='p'||dbs.q==null||!dbs.posts.length)return;dbs.hist.push({q:dbs.q,page:dbs.page,posts:dbs.posts,more:dbs.more,total:dbs.total,fromArt:dbs.fromArt,inp:$('#dbQ').value,g:$('#dbGrid').innerHTML,r:$('#dbRel').innerHTML,pg:$('#dbPager').innerHTML,st:$('#dbList').scrollTop});if(dbs.hist.length>30)dbs.hist.shift()}
 function dbPop(){const h=dbs.hist.pop();if(!h)return;dbs.gen++;dbs.busy=false;Object.assign(dbs,{q:h.q,page:h.page,posts:h.posts,more:h.more,total:h.total,fromArt:h.fromArt,post:null});
  $('#dbPost').classList.add('hide');$('#dbAc').classList.add('hide');dbMode('p');$('#dbQ').value=h.inp;$('#dbGrid').innerHTML=h.g;$('#dbRel').innerHTML=h.r;$('#dbPager').innerHTML=h.pg;$('#dbMsg').textContent='';$('#dbList').scrollTop=h.st;dbBackUI()}
@@ -1167,7 +1178,7 @@ function dbAdd(tags){const c=BP().replace(/[\s,]+$/,''),have=new Set(c.split(','
 const dbPostTags=()=>{const p=dbs.post;return p?[[4,p.tag_string_character],[3,p.tag_string_copyright],[0,p.tag_string_general]].flatMap(([k,s])=>(s||'').trim().split(/\s+/).filter(Boolean).map(t=>dbTagTxt(t,k))):[]};
 $('#bDb').onclick=()=>{$('#dbPop').classList.remove('hide');if(!dbs.posts.length&&!dbs.busy)dbSearch($('#dbQ').value,1)};
 $('#dbX').onclick=()=>{$('#dbPop').classList.add('hide');$('#dbAc').classList.add('hide')};
-$('#dbBack').onclick=()=>{if(dbs.post)return dbList();if(dbs.tab==='g'&&dbs.gst.length){const p=dbs.gst.pop();return dbGrpOpen(p.t,true,p.st)}if(dbs.hist.length)return dbPop();if(dbs.fromArt){const t=dbs.fromArt;dbs.fromArt=false;dbs.gen++;dbs.busy=false;dbs.in.p=$('#dbQ').value;$('#dbQ').value=dbs.in[t]||'';dbMode(t);if(t==='b')dbBmRender();$('#dbMsg').textContent='';$('#dbList').scrollTop=0;dbBackUI()}};
+$('#dbBack').onclick=()=>{if(dbs.post)return dbList();if(dbs.tab==='g'&&dbs.gst.length){const p=dbs.gst.pop();return dbGrpOpen(p.t,true,p.st)}if(dbs.hist.length)return dbPop();if(dbs.fromArt){const t=dbs.fromArt;dbs.fromArt=false;dbs.gen++;dbs.busy=false;dbs.in.p=$('#dbQ').value;$('#dbQ').value=dbs.in[t]||'';dbMode(t);if(t==='b')dbBmRender();if(t==='g')dbGrpRender();$('#dbMsg').textContent='';$('#dbList').scrollTop=t==='g'?dbs.gScroll||0:0;dbBackUI()}};
 $('#dbGo').onclick=()=>{$('#dbQ').blur();if(dbs.tab==='b')return dbBmRender();if(dbs.tab==='g')return dbGrpRender();dbs.fromArt=false;if(dbs.tab==='a'){const n=$('#dbQ').value.trim().replace(/^artist:/i,'').trim().replace(/\s+/g,'_');if(n)dbArtists(n)}else dbSearch($('#dbQ').value,1)};
 $('#dbQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#dbGo').click()}};
 $('#dbExt').onclick=()=>window.open(dbs.post?`${DBU}/posts/${dbs.post.id}`:`${DBU}/posts?tags=${encodeURIComponent(dbs.q)}`,'danbooru');
@@ -1225,7 +1236,7 @@ $('#dbBm').onclick=e=>{const f=e.target.closest('[data-bf]'),m=e.target.closest(
  if(f){dbs.bf=f.dataset.bf;dbBmRender()}
  else if(m){dbs.mAnchor=m;if(m.dataset.mc2==='fnew')dbAsk('새 폴더 이름','',v=>{const B=BMget();if(!B.f.includes(v))B.f.push(v);dbs.bf=v;BMset(B)});
   else dbMenuShow(m,MI('fren','이름 변경','edit')+(BMget().f.length>1?MI('fdel','폴더 삭제','trash'):''))}
- else if(s){dbs.in.b=$('#dbQ').value;dbs.gen++;dbs.busy=false;dbMode('p');$('#dbQ').value=s.dataset.s;dbs.fromArt='b';dbSearch(s.dataset.s,1)}};
+ else if(s){dbs.in.b=$('#dbQ').value;dbs.gen++;dbs.busy=false;dbs.hist=[];dbs.noPush=true;dbMode('p');$('#dbQ').value=s.dataset.s;dbs.fromArt='b';dbSearch(s.dataset.s,1)}};
 
 /* ---------- backup file: export / import ---------- */
 const BK_KEYS=['nai_dbbm','nai_presets','nai_chunks','nai_state','nai_enh','nai_mk','nai_sheet'];let bkImp=null;
@@ -1258,7 +1269,8 @@ $('#bOld').addEventListener('contextmenu',e=>e.preventDefault());
 const ENH=Object.assign({up:1.5,mag:2,s:.5,n:0},(()=>{try{return JSON.parse(LS.nai_enh||'{}')}catch{return {}}})());
 const MAGS={1:.4,2:.5,3:.6,4:.7,5:.8};
 function enhUI(){$$('#enhUp button').forEach(b=>b.classList.toggle('on',+b.dataset.v===ENH.up));$('#enhMag').value=ENH.mag;$('#enhMv').textContent=ENH.mag;
- $('#enhS').value=$('#enhSr').value=ENH.s;$('#enhN').value=$('#enhNr').value=ENH.n;LS.nai_enh=JSON.stringify(ENH)}
+ $('#enhS').value=$('#enhSr').value=ENH.s;$('#enhN').value=$('#enhNr').value=ENH.n;LS.nai_enh=JSON.stringify(ENH);
+ if(cur){const s=itSnap(cur),v=nPrice(Object.assign(snapOpt(s),{w:r64(cur.meta.w*ENH.up),h:r64(cur.meta.h*ENH.up),n:1,str:ENH.s}));$('#enhGo').textContent='Enhance!'+(v==null?'':' · ✦ '+v)}}
 function openEnh(){enhUI();open('#mEnh')}
 $('#enhUp').onclick=e=>{const b=e.target.closest('[data-v]');if(b){ENH.up=+b.dataset.v;enhUI()}};
 $('#enhMag').oninput=e=>{ENH.mag=+e.target.value;ENH.s=MAGS[ENH.mag];ENH.n=0;enhUI()};
@@ -1279,7 +1291,9 @@ const EMO_KO={neutral:'무표정',happy:'행복',sad:'슬픔',angry:'화남',sca
 const DIR={t:'bg-removal'};
 $('#dirE').innerHTML=EMO.map(e=>`<option value="${e}">${EMO_KO[e]} (${e})</option>`).join('');
 function dirUI(){$$('#dirT button').forEach(b=>b.classList.toggle('on',b.dataset.v===DIR.t));$$('#mDir .dO').forEach(d=>d.classList.toggle('hide',!d.dataset.f.split(' ').includes(DIR.t)));
- $('#dirDl').textContent=DIR.t==='emotion'?'표정 약하게: '+$('#dirD').value:'Defry (색·노이즈 줄이기): '+$('#dirD').value}
+ $('#dirDl').textContent=DIR.t==='emotion'?'표정 약하게: '+$('#dirD').value:'Defry (색·노이즈 줄이기): '+$('#dirD').value;
+ if(cur){let w=cur.meta.w,h=cur.meta.h,k=w*h>3145728?Math.sqrt(3145728/(w*h)):1;w=Math.floor(w*k);h=Math.floor(h*k);if(w*h<1048576){k=Math.sqrt(1048576/(w*h));w=Math.floor(w*k);h=Math.floor(h*k)}
+  const bg=DIR.t==='bg-removal';let v=nPrice({w,h,steps:28,n:1,str:1,gen:3,noFree:bg});if(v!=null&&bg)v=3*v+5;$('#dirGo').textContent='실행'+(v==null?'':' · ✦ '+v)}}
 function openDir(){dirUI();open('#mDir')}
 $('#dirT').onclick=e=>{const b=e.target.closest('[data-v]');if(b){DIR.t=b.dataset.v;dirUI()}};
 $('#dirD').oninput=dirUI;
