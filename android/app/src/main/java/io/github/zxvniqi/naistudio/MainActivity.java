@@ -42,6 +42,15 @@ public class MainActivity extends Activity {
         web = new WebView(this);
         web.setBackgroundColor(0xff0e0f21);
         setContentView(web);
+        // the WebView must own focus before the first tap, or the keyboard opens but typing goes nowhere
+        web.setFocusable(true);
+        web.setFocusableInTouchMode(true);
+        web.requestFocus(android.view.View.FOCUS_DOWN);
+        web.setOnTouchListener((v, e) -> {
+            int a = e.getActionMasked();
+            if ((a == android.view.MotionEvent.ACTION_DOWN || a == android.view.MotionEvent.ACTION_UP) && !v.hasFocus()) v.requestFocus();
+            return false;
+        });
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
