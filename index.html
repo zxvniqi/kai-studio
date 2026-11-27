@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json?v=2">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611232106">
+<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611271046">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -225,7 +225,7 @@ select.mini{width:auto;font-size:12px;padding:3px 6px;max-width:60%}
 #toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--p3);border:1px solid var(--acc);border-radius:6px;padding:8px 14px;z-index:40;display:none;max-width:90vw}
 #toast.bad{border-color:var(--bad);color:var(--bad)}
 #drop{position:fixed;inset:0;border:3px dashed var(--acc);background:#0e0f21cc;z-index:50;display:none;place-items:center;font-size:20px;color:var(--acc);pointer-events:none}
-body:not([data-gen="3"]) .o3,body:not([data-gen="5"]) .o5,body:not([data-gen="4.5"]) .o45,[data-gen="5"] .n5,[data-gen="3"] .n3{display:none!important}
+body:not([data-gen="3"]) .o3,body:not([data-gen="5"]) .o5,body:not([data-gen="4.5"]) .o45,body:not([data-gen="4.5"]):not([data-gen="5"]) .r45,[data-gen="5"] .n5,[data-gen="3"] .n3{display:none!important}
 .hide{display:none!important}
 body.med .adv{display:none!important}
 @media(max-width:900px){
@@ -303,7 +303,7 @@ body.med .adv{display:none!important}
      <div class="lbl">노이즈</div><div class="ns"><input type="number" data-k="noise" min="0" max="0.99" step="0.01"><input type="range" data-k="noise" min="0" max="0.99" step="0.01"></div>
     </div>
     <div class="n5 rgrp"><div class="rc"><span class="ri" data-ic="vibe"></span><div class="grow"><b>바이브 트랜스퍼</b><div class="mut">그림은 바꾸고 분위기는 유지</div></div><button class="rb" id="bAddVibe" title="바이브 추가"></button></div><div id="vibes"></div></div>
-    <div class="o45 rgrp"><div class="rc"><span class="ri" data-ic="idc"></span><div class="grow"><b>프리사이스 레퍼런스</b><div class="mut">캐릭터나 스타일 참고 이미지</div></div><button class="rb" id="bAddRef" title="레퍼런스 추가"></button></div><div id="refs"></div></div>
+    <div class="r45 rgrp"><div class="rc"><span class="ri" data-ic="idc"></span><div class="grow"><b>프리사이스 레퍼런스</b><div class="mut">캐릭터나 스타일 참고 이미지</div></div><button class="rb" id="bAddRef" title="레퍼런스 추가"></button></div><div id="refs"></div></div>
    </div>
   </div>
  </section>
@@ -417,7 +417,7 @@ body.med .adv{display:none!important}
  <h3><span>이 이미지로 무엇을 할까요?</span><button class="ic" data-close></button></h3>
  <img id="dPrev">
  <div class="row" style="flex-wrap:wrap;justify-content:center">
-  <button class="pri" data-d="base">이미지→이미지</button><button class="pri n5" data-d="vibe">바이브 트랜스퍼</button><button class="pri o45" data-d="ref">프리사이스 레퍼런스</button></div>
+  <button class="pri" data-d="base">이미지→이미지</button><button class="pri n5" data-d="vibe">바이브 트랜스퍼</button><button class="pri r45" data-d="ref">프리사이스 레퍼런스</button></div>
  <div id="dMetaBox" style="margin-top:14px">
   <b>메타데이터가 있습니다</b>
   <div class="row" style="align-items:flex-end"><div class="grow">
@@ -581,7 +581,7 @@ function refresh(){
  if(base)$('#baseInfo').textContent=base.mask?'인페인트 마스크 있음':'';
  $('#bMask').innerHTML=ic('inp')+' 인페인트';
  $('#bMask').classList.toggle('on',!!(base&&base.mask));
- $('#refBadge').textContent=((base?1:0)+(model().gen<5?vibes.length:0)+(model().gen===4.5?refs.length:0))||'';
+ $('#refBadge').textContent=((base?1:0)+(model().gen<5?vibes.length:0)+(model().gen>=4.5?refs.length:0))||'';
  $('#sumT').textContent=BP().trim()||'프롬프트 입력';
  $('#cost').textContent=costText();v5Quota();tbAll();
  $('#gen').classList.toggle('busy',busy);
@@ -595,7 +595,7 @@ function nPrice(o){const px=o.w*o.h;let m=o.md?(2.951823174884865e-6*px+5.753298
 const snapOpt=s=>{const m=MODELS.find(x=>x.id===s.model)||model(),md=s.model==='nai-diffusion-5-full'&&s.effort==='medium';return {steps:md?14:(s.steps||28),gen:m.gen,md,sm:m.gen===3&&!!s.sm,dyn:!!s.dyn}};
 const itSnap=it=>{try{return it&&it.meta.snap?JSON.parse(it.meta.snap):S}catch{return S}};
 function costText(){
- const m=model();let extra=0;if(m.gen!==5){if(m.gen>=4)extra+=vibes.filter(v=>!v.enc[m.id+'|'+v.info]).length*2;if(m.gen===4.5)extra+=refs.length*5*S.n}
+ const m=model();let extra=0;if(m.gen!==5){if(m.gen>=4)extra+=vibes.filter(v=>!v.enc[m.id+'|'+v.info]).length*2;}extra+=refsFor(m.gen,!!(base&&base.mask)).length*5*S.n;
  const v=nPrice(Object.assign(snapOpt(S),{w:S.w,h:S.h,n:S.n,str:base?S.strength:1}));return v==null?'':(v+extra)+' Anlas';
 }
 const upPrice=(w,h)=>w*h>1048576?null:[[1048576,1],[1747627,2],[2446678,3],[3145728,4]].find(([a])=>w*h<=a)[1];
@@ -609,7 +609,7 @@ document.addEventListener('input',e=>{
  S[k]=el.type==='checkbox'?el.checked:(el.type==='range'||el.type==='number'||'num' in d)?+el.value:el.value;
  if(el.type==='range'||el.type==='number')$$(`[data-k="${k}"]`).forEach(o=>{if(o!==el)o.value=S[k]});
  if(k==='seed')S.seed=el.value.replace(/\D/g,'');
- if(k==='model'){modelUI();bindAll()}
+ if(k==='model'){modelUI();bindAll();renderRefs()}
  save();refresh();
 });
 document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.k;if(k==='w'||k==='h'){S[k]=Math.min(3072,r64(+e.target.value||64));e.target.value=S[k];save();refresh()}});
@@ -750,7 +750,7 @@ function renderVibes(){
   <button class="ic" data-c="del">${ic('x')}</button></div></div>`).join('');refresh();persistRefs()}
 let prT,prReady=false;
 function persistRefs(){if(!prReady)return;clearTimeout(prT);prT=setTimeout(()=>{if(!db)return;
- const v={vibes:vibes.map(({url,b,str,info,enc})=>({url,b,str,info,enc})),refs:refs.map(({url,b,type,str,fid})=>({url,b,type,str,fid}))};
+ const v={vibes:vibes.map(({url,b,str,info,enc})=>({url,b,str,info,enc})),refs:refs.map(({url,b,b5,type,same,str,fid})=>({url,b,b5,type,same,str,fid}))};
  try{db.transaction('kv','readwrite').objectStore('kv').put(v,'refs')}catch{}},300)}
 async function restoreRefs(){if(!db)return;try{const v=await new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get('refs');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});
  if(v){vibes=v.vibes||[];refs=v.refs||[];for(const x of vibes)x.img=await loadImg('data:image/png;base64,'+x.b).catch(()=>null);renderVibes();renderRefs()}}catch{}}
@@ -758,16 +758,23 @@ $('#bAddVibe').onclick=()=>pick(f=>addVibe(f).catch(e=>toast(e.message,1)));
 $('#vibes').addEventListener('input',e=>{const c=e.target.closest('.card');if(c){vibes[+c.dataset.i][e.target.dataset.f]=+e.target.value;refresh();persistRefs()}});
 $('#vibes').addEventListener('click',e=>{if(e.target.closest('[data-c]')){vibes.splice(+e.target.closest('.card').dataset.i,1);renderVibes()}});
 async function addRef(blob){const u=URL.createObjectURL(blob),img=await loadImg(u).finally(()=>setTimeout(()=>dropUrl(u),0)),ar=img.width/img.height;const [w,h]=ar<.8?[1024,1536]:ar>1.25?[1536,1024]:[1472,1472];
- const c=contain(img,w,h);refs.push({url:c.toDataURL('image/jpeg',.6),b:b64(c),type:'character&style',str:1,fid:1});renderRefs()}
-function renderRefs(){
+ const c=contain(img,w,h);refs.push({url:c.toDataURL('image/jpeg',.6),b:b64(c),b5:b64(bucket5(img)),type:'character&style',same:true,str:1,fid:1});renderRefs()}
+const BK5=[[256,4096],[256,4032],[256,3968],[256,3904],[256,3840],[256,3776],[256,3712],[256,3648],[256,3584],[256,3520],[256,3456],[256,3392],[256,3328],[320,3264],[320,3200],[320,3136],[320,3072],[320,3008],[320,2944],[320,2880],[320,2816],[320,2752],[384,2688],[384,2624],[384,2560],[384,2496],[384,2432],[384,2368],[448,2304],[448,2240],[448,2176],[448,2112],[512,2048],[512,1984],[512,1920],[512,1856],[576,1792],[576,1728],[576,1664],[640,1600],[640,1536],[704,1472],[704,1408],[768,1344],[768,1280],[832,1216],[896,1152],[960,1088],[1024,1024],[1088,960],[1152,896],[1216,832],[1280,768],[1344,768],[1408,704],[1472,704],[1536,640],[1600,640],[1664,576],[1728,576],[1792,576],[1856,512],[1920,512],[1984,512],[2048,512],[2112,448],[2176,448],[2240,448],[2304,448],[2368,384],[2432,384],[2496,384],[2560,384],[2624,384],[2688,384],[2752,320],[2816,320],[2880,320],[2944,320],[3008,320],[3072,320],[3136,320],[3200,320],[3264,320],[3328,256],[3392,256],[3456,256],[3520,256],[3584,256],[3648,256],[3712,256],[3776,256],[3840,256],[3904,256],[3968,256],[4032,256],[4096,256]];
+function bucket5(img){const w=img.width,h=img.height,a=Math.log(Math.max(w,1)/Math.max(h,1));let B=BK5[0],d=Math.abs(a-Math.log(B[0]/B[1]));for(const e of BK5){const x=Math.abs(a-Math.log(e[0]/e[1]));if(x<d){B=e;d=x}}
+ const [bw,bh]=B,n=Math.max(bw/w,bh/h),rw=Math.max(Math.floor(w*n+.5),bw),rh=Math.max(Math.floor(h*n+.5),bh),c=cv(bw,bh);c.getContext('2d').drawImage(img,-Math.floor((rw-bw)/2),-Math.floor((rh-bh)/2),rw,rh);return c}
+/* description sent to NAI: V5 knows outfits, V4.5 does not */
+function refDesc(r,gen){const t=r.type||'character&style';if(gen>=5)return t==='character&style'?(r.same===false?'character&style_anyoutfit':t):t==='character'?(r.same?'character_mainoutfit':t):t;return t==='costume'?null:t}
+const refsFor=(gen,mask)=>gen===4.5?refs.filter(r=>r.type!=='costume'):gen>=5&&!mask?refs:[];
+function renderRefs(){const v5=model().gen>=5;
  $('#refs').innerHTML=refs.map((v,i)=>`<div class="card" data-i="${i}"><div class="row"><img class="thumb" src="${v.url}"><div class="grow">
-  <select data-f="type"><option value="character&amp;style">캐릭터 + 스타일</option><option value="character">캐릭터</option><option value="style">스타일</option></select>
-  <label class="sl" style="margin-top:6px"><div><span>강도</span><output></output></div><input type="range" data-f="str" min="0" max="1" step="0.01" value="${v.str}"></label>
-  <label class="sl"><div><span>충실도</span><output></output></div><input type="range" data-f="fid" min="0" max="1" step="0.01" value="${v.fid}"></label></div>
+  <select data-f="type"><option value="character&amp;style">캐릭터 + 스타일</option><option value="character">캐릭터</option><option value="style">스타일</option>${v5?'<option value="costume">의상</option>':''}</select>
+  ${v5&&/^character/.test(v.type||'character&style')?`<label style="margin-top:6px"><input type="checkbox" data-f="same"${(v.same??v.type!=='character')?' checked':''}> 같은 옷 유지</label>`:''}
+  <label class="sl" style="margin-top:6px"><div><span>강도</span><output></output></div><input type="range" data-f="str" min="0" max="${v5?5:1}" step="${v5?0.05:0.01}" value="${v5?v.str:Math.min(1,v.str)}"></label>
+  ${v5?'':`<label class="sl"><div><span>충실도</span><output></output></div><input type="range" data-f="fid" min="0" max="1" step="0.01" value="${v.fid}"></label>`}</div>
   <button class="ic" data-c="del">${ic('x')}</button></div></div>`).join('');
- $$('#refs select').forEach((s,i)=>s.value=refs[i].type);refresh();persistRefs()}
+ $$('#refs select').forEach((s,i)=>{if(!v5&&refs[i].type==='costume'){s.value='costume';s.insertAdjacentHTML('beforeend','<option value="costume">의상 (V5 전용)</option>')}s.value=refs[i].type||'character&style'});refresh();persistRefs()}
 $('#bAddRef').onclick=()=>pick(f=>addRef(f).catch(e=>toast(e.message,1)));
-$('#refs').addEventListener('input',e=>{const c=e.target.closest('.card'),f=e.target.dataset.f;if(c){refs[+c.dataset.i][f]=f==='type'?e.target.value:+e.target.value;refresh();persistRefs()}});
+$('#refs').addEventListener('input',e=>{const c=e.target.closest('.card'),f=e.target.dataset.f;if(c){const r=refs[+c.dataset.i];if(f==='type'){r.type=e.target.value;r.same=r.type==='character&style';renderRefs();return}r[f]=f==='same'?e.target.checked:+e.target.value;refresh();persistRefs()}});
 $('#refs').addEventListener('click',e=>{if(e.target.closest('[data-c]')){refs.splice(+e.target.closest('.card').dataset.i,1);renderRefs()}});
 
 /* ---------- mask editor ---------- */
@@ -904,8 +911,9 @@ async function buildPayload(seed){
    persistRefs();p.reference_image_multiple=enc;p.reference_strength_multiple=vibes.map(v=>v.str)}
   else{p.reference_image_multiple=vibes.map(v=>b64(contain(v.img,448,448)));p.reference_information_extracted_multiple=vibes.map(v=>v.info);p.reference_strength_multiple=vibes.map(v=>v.str)}
  }
- if(m.gen===4.5&&refs.length)Object.assign(p,{director_reference_images:refs.map(r=>r.b),director_reference_descriptions:refs.map(r=>({caption:{base_caption:r.type,char_captions:[]},legacy_uc:false})),
-  director_reference_information_extracted:refs.map(()=>1),director_reference_strength_values:refs.map(r=>r.str),director_reference_secondary_strength_values:refs.map(r=>+(1-r.fid).toFixed(2))});
+ const R=refsFor(m.gen,!!(base&&base.mask));
+ if(R.length)Object.assign(p,{director_reference_images:R.map(r=>m.gen>=5?(r.b5||r.b):r.b),director_reference_descriptions:R.map(r=>({caption:{base_caption:refDesc(r,m.gen),char_captions:[]},legacy_uc:false})),
+  director_reference_information_extracted:R.map(()=>1),director_reference_strength_values:R.map(r=>m.gen>=5?r.str:Math.min(1,r.str)),director_reference_secondary_strength_values:R.map(r=>m.gen>=5?0:+(1-r.fid).toFixed(2))});
  return {input:prompt,model:mid,action,parameters:p};
 }
 /* ---------- streaming (msgpack) ---------- */
