@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json?v=2">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611271046">
+<meta name="theme-color" content="#0e0f21"><meta name="kv" content="202611271052">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -596,11 +596,11 @@ const snapOpt=s=>{const m=MODELS.find(x=>x.id===s.model)||model(),md=s.model==='
 const itSnap=it=>{try{return it&&it.meta.snap?JSON.parse(it.meta.snap):S}catch{return S}};
 function costText(){
  const m=model();let extra=0;if(m.gen!==5){if(m.gen>=4)extra+=vibes.filter(v=>!v.enc[m.id+'|'+v.info]).length*2;}extra+=refsFor(m.gen,!!(base&&base.mask)).length*5*S.n;
- const v=nPrice(Object.assign(snapOpt(S),{w:S.w,h:S.h,n:S.n,str:base?S.strength:1}));return v==null?'':(v+extra)+' Anlas';
+ const v=nPrice(Object.assign(snapOpt(S),{w:S.w,h:S.h,n:S.n,str:base?S.strength:1,noFree:refsFor(m.gen,false).length>0}));return v==null?'':(v+extra)+' Anlas';
 }
 const upPrice=(w,h)=>w*h>1048576?null:[[1048576,1],[1747627,2],[2446678,3],[3145728,4]].find(([a])=>w*h<=a)[1];
 function barCost(){const it=cur,set=(a,v)=>{const b=$(`#bar [data-a="${a}"]`);if(!b)return;let e=b.querySelector('em.bc');if(!e){e=document.createElement('em');e.className='bc';b.append(e)}e.textContent=v==null?'':v}
- if(!it)return;const s=itSnap(it),W=it.meta.w,H=it.meta.h;set('var',nPrice(Object.assign(snapOpt(s),{w:W,h:H,n:3,str:.8})));set('up',upPrice(W,H))}
+ if(!it)return;const s=itSnap(it),W=it.meta.w,H=it.meta.h;const g=snapOpt(s).gen,rv=refsFor(g,false).length,pv=nPrice(Object.assign(snapOpt(s),{w:W,h:H,n:3,str:.8,noFree:rv>0}));set('var',pv==null?null:pv+refsFor(g,false).length*15);set('up',upPrice(W,H))}
 document.addEventListener('input',e=>{
  const el=e.target,d=el.dataset||{};
  if(d.imp){S.imp[d.imp]=el.checked;save();return}
@@ -757,7 +757,7 @@ async function restoreRefs(){if(!db)return;try{const v=await new Promise((res,re
 $('#bAddVibe').onclick=()=>pick(f=>addVibe(f).catch(e=>toast(e.message,1)));
 $('#vibes').addEventListener('input',e=>{const c=e.target.closest('.card');if(c){vibes[+c.dataset.i][e.target.dataset.f]=+e.target.value;refresh();persistRefs()}});
 $('#vibes').addEventListener('click',e=>{if(e.target.closest('[data-c]')){vibes.splice(+e.target.closest('.card').dataset.i,1);renderVibes()}});
-async function addRef(blob){const u=URL.createObjectURL(blob),img=await loadImg(u).finally(()=>setTimeout(()=>dropUrl(u),0)),ar=img.width/img.height;const [w,h]=ar<.8?[1024,1536]:ar>1.25?[1536,1024]:[1472,1472];
+async function addRef(blob){const u=URL.createObjectURL(blob),img=await loadImg(u).finally(()=>setTimeout(()=>dropUrl(u),0)),ar=img.width/img.height;const [w,h]=[[1024,1536],[1536,1024],[1472,1472]].reduce((a,b)=>Math.abs(b[0]/b[1]-ar)<Math.abs(a[0]/a[1]-ar)?b:a);
  const c=contain(img,w,h);refs.push({url:c.toDataURL('image/jpeg',.6),b:b64(c),b5:b64(bucket5(img)),type:'character&style',same:true,str:1,fid:1});renderRefs()}
 const BK5=[[256,4096],[256,4032],[256,3968],[256,3904],[256,3840],[256,3776],[256,3712],[256,3648],[256,3584],[256,3520],[256,3456],[256,3392],[256,3328],[320,3264],[320,3200],[320,3136],[320,3072],[320,3008],[320,2944],[320,2880],[320,2816],[320,2752],[384,2688],[384,2624],[384,2560],[384,2496],[384,2432],[384,2368],[448,2304],[448,2240],[448,2176],[448,2112],[512,2048],[512,1984],[512,1920],[512,1856],[576,1792],[576,1728],[576,1664],[640,1600],[640,1536],[704,1472],[704,1408],[768,1344],[768,1280],[832,1216],[896,1152],[960,1088],[1024,1024],[1088,960],[1152,896],[1216,832],[1280,768],[1344,768],[1408,704],[1472,704],[1536,640],[1600,640],[1664,576],[1728,576],[1792,576],[1856,512],[1920,512],[1984,512],[2048,512],[2112,448],[2176,448],[2240,448],[2304,448],[2368,384],[2432,384],[2496,384],[2560,384],[2624,384],[2688,384],[2752,320],[2816,320],[2880,320],[2944,320],[3008,320],[3072,320],[3136,320],[3200,320],[3264,320],[3328,256],[3392,256],[3456,256],[3520,256],[3584,256],[3648,256],[3712,256],[3776,256],[3840,256],[3904,256],[3968,256],[4032,256],[4096,256]];
 function bucket5(img){const w=img.width,h=img.height,a=Math.log(Math.max(w,1)/Math.max(h,1));let B=BK5[0],d=Math.abs(a-Math.log(B[0]/B[1]));for(const e of BK5){const x=Math.abs(a-Math.log(e[0]/e[1]));if(x<d){B=e;d=x}}
